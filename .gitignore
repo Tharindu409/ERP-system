@@ -1,0 +1,24 @@
+# .NET build output
+**/bin/
+**/obj/
+
+# Node dependencies and build output
+**/node_modules/
+**/dist/
+**/dist-ssr/
+
+# Local environment and logs
+*.user
+*.suo
+*.log
+*.local
+
+# IDE and OS files
+.vs/
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+
+# Nested repository metadata from the backend project
+.git-backend-backup/
