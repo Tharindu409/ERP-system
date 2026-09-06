@@ -19,12 +19,13 @@ public class EmployeeController : ControllerBase
         _context = context;
     }
 
-    // GET: api/employee
+    // GET: api/Employee
     [Authorize(Roles = "Admin,HR,Manager")]
     [HttpGet]
     public async Task<IActionResult> GetEmployees()
     {
         var employees = await _context.Employees
+            .Include(e => e.Department)
             .Select(e => new EmployeeDto
             {
                 Id = e.Id,
@@ -33,9 +34,10 @@ public class EmployeeController : ControllerBase
                 LastName = e.LastName,
                 Phone = e.Phone,
                 Address = e.Address,
-                HireDate = e.HireDate.AddDays(0), // Ensure DateOnly is returned correctly
+                HireDate = e.HireDate,
                 Salary = e.Salary,
                 DepartmentId = e.DepartmentId,
+                DepartmentName = e.Department!.Name,
                 IsActive = e.IsActive
             })
             .ToListAsync();
@@ -43,12 +45,13 @@ public class EmployeeController : ControllerBase
         return Ok(employees);
     }
 
-    // GET: api/employee/1
+    // GET: api/Employee/1
     [Authorize(Roles = "Admin,HR,Manager")]
     [HttpGet("{id}")]
     public async Task<IActionResult> GetEmployee(int id)
     {
         var employee = await _context.Employees
+            .Include(e => e.Department)
             .Where(e => e.Id == id)
             .Select(e => new EmployeeDto
             {
@@ -58,9 +61,10 @@ public class EmployeeController : ControllerBase
                 LastName = e.LastName,
                 Phone = e.Phone,
                 Address = e.Address,
-                HireDate = e.HireDate.AddDays(0),
+                HireDate = e.HireDate,
                 Salary = e.Salary,
                 DepartmentId = e.DepartmentId,
+                DepartmentName = e.Department!.Name,
                 IsActive = e.IsActive
             })
             .FirstOrDefaultAsync();
@@ -75,12 +79,12 @@ public class EmployeeController : ControllerBase
 
         return Ok(employee);
     }
+
+    // POST: api/Employee
     [Authorize(Roles = "Admin,HR")]
-    // POST: api/employee
     [HttpPost]
     public async Task<IActionResult> CreateEmployee(Employee employee)
     {
-        // Check department exists
         var department = await _context.Departments
             .FindAsync(employee.DepartmentId);
 
@@ -92,7 +96,6 @@ public class EmployeeController : ControllerBase
             });
         }
 
-        // Check user exists
         var user = await _context.Users
             .FindAsync(employee.UserId);
 
@@ -104,7 +107,6 @@ public class EmployeeController : ControllerBase
             });
         }
 
-        // Check if user is already an employee
         var existingEmployee = await _context.Employees
             .FirstOrDefaultAsync(e => e.UserId == employee.UserId);
 
@@ -131,15 +133,17 @@ public class EmployeeController : ControllerBase
                 LastName = employee.LastName,
                 Phone = employee.Phone,
                 Address = employee.Address,
-                HireDate = employee.HireDate.AddDays(0),
+                HireDate = employee.HireDate,
                 Salary = employee.Salary,
                 DepartmentId = employee.DepartmentId,
+                DepartmentName = department.Name,
                 IsActive = employee.IsActive
             }
         );
     }
+
+    // PUT: api/Employee/1
     [Authorize(Roles = "Admin,HR")]
-    // PUT: api/employee/1
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateEmployee(
         int id,
@@ -156,7 +160,6 @@ public class EmployeeController : ControllerBase
             });
         }
 
-        // Check department
         var department = await _context.Departments
             .FindAsync(updatedEmployee.DepartmentId);
 
@@ -193,12 +196,13 @@ public class EmployeeController : ControllerBase
                 HireDate = employee.HireDate,
                 Salary = employee.Salary,
                 DepartmentId = employee.DepartmentId,
+                DepartmentName = department.Name,
                 IsActive = employee.IsActive
             }
         });
     }
 
-    // DELETE: api/employee/1
+    // DELETE: api/Employee/1
     [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteEmployee(int id)

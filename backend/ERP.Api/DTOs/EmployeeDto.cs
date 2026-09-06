@@ -12,4 +12,5 @@ public class EmployeeDto
     public decimal Salary { get; set; }
     public int DepartmentId { get; set; }
     public bool IsActive { get; set; }
+    public string DepartmentName { get; set; } = "";
 }
