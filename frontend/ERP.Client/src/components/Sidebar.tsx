@@ -8,6 +8,8 @@ import {
   ManageAccounts,
   AccountCircle,
   BarChart,
+  EventAvailable,
+  Assessment,
   Logout,
 } from "@mui/icons-material";
 
@@ -68,6 +70,12 @@ const Sidebar = () => {
       roles: ["Admin", "HR", "Manager", "Employee"],
     },
     {
+      name: "Leave Balance",
+      path: "/leave-balance",
+      icon: <EventAvailable />,
+      roles: ["Admin", "HR", "Manager", "Employee"],
+    },
+    {
       name: "Payroll",
       path: "/payroll",
       icon: <Payments />,
@@ -91,6 +99,12 @@ const Sidebar = () => {
       icon: <ManageAccounts />,
       roles: ["Admin"],
     },
+    {
+  name: "Attendance Reports",
+  path: "/attendance-reports",
+  icon: <Assessment />,
+  roles: ["Admin", "HR", "Manager"],
+},
   ];
 
   // =========================================================

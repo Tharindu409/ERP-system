@@ -6,6 +6,7 @@ import Employees from "./pages/Employees";
 import Departments from "./pages/Departments";
 import Attendance from "./pages/Attendance";
 import Leave from "./pages/Leave";
+import LeaveBalance from "./pages/LeaveBalance";
 import Payroll from "./pages/Payroll";
 import Users from "./pages/Users";
 
@@ -13,6 +14,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import MainLayout from "./components/MainLayout";
 import Profile from "./pages/Profile";
 import Reports from "./pages/Reports";
+import AttendanceReports from "./pages/AttendanceReports";
 
 function App() {
   return (
@@ -135,6 +137,19 @@ function App() {
           }
         />
 
+        <Route
+          path="/leave-balance"
+          element={
+            <ProtectedRoute
+              allowedRoles={["Admin", "HR", "Manager", "Employee"]}
+            >
+              <MainLayout>
+                <LeaveBalance />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
         {/* ================================================= */}
         {/* PAYROLL */}
         {/* ================================================= */}
@@ -224,6 +239,22 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+  path="/attendance-reports"
+  element={
+    <ProtectedRoute
+      allowedRoles={[
+        "Admin",
+        "HR",
+        "Manager",
+      ]}
+    >
+      <MainLayout>
+        <AttendanceReports />
+      </MainLayout>
+    </ProtectedRoute>
+  }
+/>
 
       </Routes>
     </BrowserRouter>

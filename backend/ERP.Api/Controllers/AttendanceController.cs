@@ -92,78 +92,101 @@ public class AttendanceController : ControllerBase
     // Employee / Admin / HR / Manager
     // =========================================================
 
-    [HttpPost("check-in")]
-    [Authorize(Roles = "Admin,HR,Manager,Employee")]
-    public async Task<IActionResult> CheckIn()
+[HttpPost("check-in")]
+[Authorize(Roles = "Admin,HR,Manager,Employee")]
+public async Task<IActionResult> CheckIn()
+{
+    var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+    if (!int.TryParse(userIdClaim, out int userId))
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-        if (!int.TryParse(userIdClaim, out int userId))
+        return Unauthorized(new
         {
-            return Unauthorized(new
-            {
-                message = "Invalid user information."
-            });
-        }
-
-        var employee = await _context.Employees
-            .FirstOrDefaultAsync(e => e.UserId == userId);
-
-        if (employee == null)
-        {
-            return NotFound(new
-            {
-                message = "Employee profile not found for this user."
-            });
-        }
-
-        if (!employee.IsActive)
-        {
-            return BadRequest(new
-            {
-                message = "Your employee account is inactive."
-            });
-        }
-
-        var today = DateOnly.FromDateTime(DateTime.Now);
-        var currentTime = TimeOnly.FromDateTime(DateTime.Now);
-
-        var existingAttendance = await _context.Attendances
-            .FirstOrDefaultAsync(a =>
-                a.EmployeeId == employee.Id &&
-                a.Date == today);
-
-        if (existingAttendance != null)
-        {
-            return BadRequest(new
-            {
-                message = "Attendance has already been marked for today.",
-                checkIn = existingAttendance.CheckIn,
-                checkOut = existingAttendance.CheckOut
-            });
-        }
-
-        var attendance = new Attendance
-        {
-            EmployeeId = employee.Id,
-            Date = today,
-            CheckIn = currentTime,
-            Status = "Present"
-        };
-
-        _context.Attendances.Add(attendance);
-        await _context.SaveChangesAsync();
-
-        return Ok(new
-        {
-            message = "Check-in successful.",
-            attendanceId = attendance.Id,
-            employeeId = employee.Id,
-            date = attendance.Date,
-            checkIn = attendance.CheckIn,
-            status = attendance.Status
+            message = "Invalid user information."
         });
     }
+
+    var employee = await _context.Employees
+        .FirstOrDefaultAsync(e => e.UserId == userId);
+
+    if (employee == null)
+    {
+        return NotFound(new
+        {
+            message = "Employee profile not found for this user."
+        });
+    }
+
+    if (!employee.IsActive)
+    {
+        return BadRequest(new
+        {
+            message = "Your employee account is inactive."
+        });
+    }
+
+    var today = DateOnly.FromDateTime(DateTime.Now);
+    var currentTime = TimeOnly.FromDateTime(DateTime.Now);
+
+    var existingAttendance = await _context.Attendances
+        .FirstOrDefaultAsync(a =>
+            a.EmployeeId == employee.Id &&
+            a.Date == today);
+
+    if (existingAttendance != null)
+    {
+        return BadRequest(new
+        {
+            message = "Attendance has already been marked for today.",
+            checkIn = existingAttendance.CheckIn,
+            checkOut = existingAttendance.CheckOut
+        });
+    }
+
+    // =========================================================
+    // WORK START TIME
+    // 08:30 AM
+    // =========================================================
+
+    var workStartTime = new TimeOnly(8, 30);
+
+    string status;
+
+    if (currentTime <= workStartTime)
+    {
+        status = "Present";
+    }
+    else
+    {
+        status = "Late";
+    }
+
+    // =========================================================
+    // CREATE ATTENDANCE
+    // =========================================================
+
+    var attendance = new Attendance
+    {
+        EmployeeId = employee.Id,
+        Date = today,
+        CheckIn = currentTime,
+        Status = status
+    };
+
+    _context.Attendances.Add(attendance);
+
+    await _context.SaveChangesAsync();
+
+    return Ok(new
+    {
+        message = "Check-in successful.",
+        attendanceId = attendance.Id,
+        employeeId = employee.Id,
+        date = attendance.Date,
+        checkIn = attendance.CheckIn,
+        status = attendance.Status
+    });
+}
 
     // =========================================================
     // CHECK OUT
@@ -355,6 +378,108 @@ public class AttendanceController : ControllerBase
     }
 
     // =========================================================
+    // ATTENDANCE REPORT
+    // Admin / HR / Manager
+    //
+    // Example:
+    // GET /api/Attendance/report
+    // GET /api/Attendance/report?fromDate=2026-09-01&toDate=2026-09-07
+    // GET /api/Attendance/report?employeeId=5
+    // GET /api/Attendance/report?fromDate=2026-09-01&toDate=2026-09-07&employeeId=5
+    // =========================================================
+
+    [HttpGet("report")]
+    [Authorize(Roles = "Admin,HR,Manager")]
+    public async Task<IActionResult> GetAttendanceReport(
+        [FromQuery] DateOnly? fromDate,
+        [FromQuery] DateOnly? toDate,
+        [FromQuery] int? employeeId)
+    {
+        var (reportFromDate, reportToDate) = ResolveReportDates(fromDate, toDate);
+        if (reportToDate < reportFromDate)
+        {
+            return BadRequest(new { message = "toDate cannot be before fromDate." });
+        }
+
+        var records = await BuildAttendanceReportRecordsAsync(
+            reportFromDate,
+            reportToDate,
+            employeeId);
+
+        var summary = new AttendanceReportSummary
+        {
+            TotalRecords = records.Count,
+            PresentCount = records.Count(record => IsStatus(record, "Present")),
+            LateCount = records.Count(record => IsStatus(record, "Late")),
+            AbsentCount = records.Count(record => IsStatus(record, "Absent")),
+            LeaveCount = records.Count(record => IsStatus(record, "Leave")),
+            CompletedCount = records.Count(record => record.CheckIn.HasValue && record.CheckOut.HasValue),
+            NotCheckedOutCount = records.Count(record => record.CheckIn.HasValue && !record.CheckOut.HasValue)
+        };
+
+        return Ok(new AttendanceReportResponse
+        {
+            FromDate = fromDate,
+            ToDate = toDate,
+            EmployeeId = employeeId,
+            Summary = summary,
+            Records = records
+        });
+    }
+
+    // =========================================================
+    // ATTENDANCE SUMMARY BY EMPLOYEE
+    // Admin / HR / Manager
+    // =========================================================
+
+    [HttpGet("report/employee-summary")]
+    [Authorize(Roles = "Admin,HR,Manager")]
+    public async Task<IActionResult> GetEmployeeAttendanceSummary(
+        [FromQuery] DateOnly? fromDate,
+        [FromQuery] DateOnly? toDate)
+    {
+        var (reportFromDate, reportToDate) = ResolveReportDates(fromDate, toDate);
+        if (reportToDate < reportFromDate)
+        {
+            return BadRequest(new { message = "toDate cannot be before fromDate." });
+        }
+
+        var records = await BuildAttendanceReportRecordsAsync(
+            reportFromDate,
+            reportToDate,
+            employeeId: null);
+
+        var summary = records
+            .GroupBy(record => new
+            {
+                record.EmployeeId,
+                record.EmployeeName,
+                record.DepartmentName
+            })
+            .Select(group => new EmployeeAttendanceSummaryRecord
+            {
+                EmployeeId = group.Key.EmployeeId,
+                EmployeeName = group.Key.EmployeeName ?? "Unknown",
+                DepartmentName = group.Key.DepartmentName ?? "Unknown",
+                TotalDays = group.Count(),
+                PresentDays = group.Count(record => IsStatus(record, "Present")),
+                LateDays = group.Count(record => IsStatus(record, "Late")),
+                AbsentDays = group.Count(record => IsStatus(record, "Absent")),
+                LeaveDays = group.Count(record => IsStatus(record, "Leave")),
+                CompletedDays = group.Count(record => record.CheckIn.HasValue && record.CheckOut.HasValue)
+            })
+            .OrderBy(record => record.EmployeeName)
+            .ToList();
+
+        return Ok(new
+        {
+            fromDate,
+            toDate,
+            employees = summary
+        });
+    }
+
+    // =========================================================
     // UPDATE ATTENDANCE
     // Admin / HR / Manager
     // =========================================================
@@ -436,6 +561,221 @@ public class AttendanceController : ControllerBase
         {
             message = "Attendance deleted successfully."
         });
+    }
+
+    private static (DateOnly FromDate, DateOnly ToDate) ResolveReportDates(
+        DateOnly? fromDate,
+        DateOnly? toDate)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        return (
+            fromDate ?? toDate ?? today,
+            toDate ?? fromDate ?? today);
+    }
+
+    private async Task<List<AttendanceReportRecord>> BuildAttendanceReportRecordsAsync(
+        DateOnly reportFromDate,
+        DateOnly reportToDate,
+        int? employeeId)
+    {
+        var employeesQuery = _context.Employees
+            .AsNoTracking()
+            .Include(employee => employee.Department)
+            .Where(employee => employee.IsActive);
+
+        if (employeeId.HasValue)
+        {
+            employeesQuery = employeesQuery.Where(employee => employee.Id == employeeId.Value);
+        }
+
+        var employees = await employeesQuery.ToListAsync();
+        var employeeIds = employees.Select(employee => employee.Id).ToList();
+
+        var attendanceRecords = employeeIds.Count == 0
+            ? []
+            : await _context.Attendances
+                .AsNoTracking()
+                .Where(attendance => employeeIds.Contains(attendance.EmployeeId) &&
+                                     attendance.Date >= reportFromDate &&
+                                     attendance.Date <= reportToDate)
+                .Select(attendance => new AttendanceReportRecord
+                {
+                    Id = attendance.Id,
+                    EmployeeId = attendance.EmployeeId,
+                    Date = attendance.Date,
+                    CheckIn = attendance.CheckIn,
+                    CheckOut = attendance.CheckOut,
+                    Status = attendance.Status,
+                    Remarks = attendance.Remarks
+                })
+                .ToListAsync();
+
+        var approvedLeaveDates = employeeIds.Count == 0
+            ? []
+            : await _context.LeaveRequests
+                .AsNoTracking()
+                .Where(leave => employeeIds.Contains(leave.EmployeeId) &&
+                                leave.Status == "Approved" &&
+                                leave.StartDate <= reportToDate &&
+                                leave.EndDate >= reportFromDate)
+                .Select(leave => new ApprovedLeaveDate
+                {
+                    EmployeeId = leave.EmployeeId,
+                    StartDate = leave.StartDate,
+                    EndDate = leave.EndDate
+                })
+                .ToListAsync();
+
+        var recordsByEmployeeAndDate = attendanceRecords
+            .ToDictionary(record => (record.EmployeeId, record.Date));
+        var leaveByEmployee = approvedLeaveDates
+            .GroupBy(leave => leave.EmployeeId)
+            .ToDictionary(group => group.Key, group => group.ToList());
+        var records = new List<AttendanceReportRecord>();
+
+        foreach (var employee in employees)
+        {
+            var firstWorkingDate = reportFromDate > employee.HireDate
+                ? reportFromDate
+                : employee.HireDate;
+
+            for (var date = firstWorkingDate; date <= reportToDate; date = date.AddDays(1))
+            {
+                if (date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
+                {
+                    continue;
+                }
+
+                if (recordsByEmployeeAndDate.TryGetValue((employee.Id, date), out var attendance))
+                {
+                    records.Add(CreateReportRecord(attendance, employee));
+                    continue;
+                }
+
+                var isApprovedLeave = leaveByEmployee.TryGetValue(employee.Id, out var employeeLeaves) &&
+                    employeeLeaves.Any(leave => date >= leave.StartDate && date <= leave.EndDate);
+
+                records.Add(new AttendanceReportRecord
+                {
+                    Id = 0,
+                    EmployeeId = employee.Id,
+                    EmployeeName = $"{employee.FirstName} {employee.LastName}".Trim(),
+                    DepartmentName = employee.Department?.Name,
+                    Date = date,
+                    Status = isApprovedLeave ? "Leave" : "Absent",
+                    Remarks = isApprovedLeave ? "Approved leave." : "No attendance recorded."
+                });
+            }
+        }
+
+        return records
+            .OrderByDescending(record => record.Date)
+            .ThenBy(record => record.EmployeeName)
+            .ToList();
+    }
+
+    private static AttendanceReportRecord CreateReportRecord(
+        AttendanceReportRecord attendance,
+        Employee employee)
+    {
+        return new AttendanceReportRecord
+        {
+            Id = attendance.Id,
+            EmployeeId = attendance.EmployeeId,
+            EmployeeName = $"{employee.FirstName} {employee.LastName}".Trim(),
+            DepartmentName = employee.Department?.Name,
+            Date = attendance.Date,
+            CheckIn = attendance.CheckIn,
+            CheckOut = attendance.CheckOut,
+            Status = attendance.Status,
+            Remarks = attendance.Remarks
+        };
+    }
+
+    private static bool IsStatus(AttendanceReportRecord record, string status)
+    {
+        return string.Equals(record.Status, status, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private sealed class AttendanceReportRecord
+    {
+        public int Id { get; set; }
+
+        public int EmployeeId { get; set; }
+
+        public string? EmployeeName { get; set; }
+
+        public string? DepartmentName { get; set; }
+
+        public DateOnly Date { get; set; }
+
+        public TimeOnly? CheckIn { get; set; }
+
+        public TimeOnly? CheckOut { get; set; }
+
+        public string Status { get; set; } = string.Empty;
+
+        public string? Remarks { get; set; }
+    }
+
+    private sealed class ApprovedLeaveDate
+    {
+        public int EmployeeId { get; set; }
+
+        public DateOnly StartDate { get; set; }
+
+        public DateOnly EndDate { get; set; }
+    }
+
+    private sealed class AttendanceReportSummary
+    {
+        public int TotalRecords { get; set; }
+
+        public int PresentCount { get; set; }
+
+        public int LateCount { get; set; }
+
+        public int AbsentCount { get; set; }
+
+        public int LeaveCount { get; set; }
+
+        public int CompletedCount { get; set; }
+
+        public int NotCheckedOutCount { get; set; }
+    }
+
+    private sealed class EmployeeAttendanceSummaryRecord
+    {
+        public int EmployeeId { get; set; }
+
+        public string EmployeeName { get; set; } = string.Empty;
+
+        public string DepartmentName { get; set; } = string.Empty;
+
+        public int TotalDays { get; set; }
+
+        public int PresentDays { get; set; }
+
+        public int LateDays { get; set; }
+
+        public int AbsentDays { get; set; }
+
+        public int LeaveDays { get; set; }
+
+        public int CompletedDays { get; set; }
+    }
+
+    private sealed class AttendanceReportResponse
+    {
+        public DateOnly? FromDate { get; set; }
+
+        public DateOnly? ToDate { get; set; }
+
+        public int? EmployeeId { get; set; }
+
+        public AttendanceReportSummary Summary { get; set; } = new();
+
+        public IReadOnlyList<AttendanceReportRecord> Records { get; set; } = [];
     }
 }
 

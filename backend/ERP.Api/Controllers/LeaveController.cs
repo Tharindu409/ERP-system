@@ -12,6 +12,15 @@ namespace ERP.Api.Controllers;
 [Authorize]
 public class LeaveController : ControllerBase
 {
+    private static readonly IReadOnlyDictionary<string, int> LeaveAllocations =
+        new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Annual"] = 20,
+            ["Sick"] = 10,
+            ["Casual"] = 7,
+            ["Unpaid"] = 0
+        };
+
     private readonly AppDbContext _context;
 
     public LeaveController(AppDbContext context)
@@ -43,6 +52,12 @@ public class LeaveController : ControllerBase
             {
                 message = "Leave type is required."
             });
+        }
+
+        var leaveType = NormalizeLeaveType(request.LeaveType);
+        if (leaveType == null)
+        {
+            return BadRequest(new { message = "Leave type must be Annual, Sick, Casual, or Unpaid." });
         }
 
         if (request.StartDate == default ||
@@ -119,7 +134,7 @@ public class LeaveController : ControllerBase
         var leaveRequest = new LeaveRequest
         {
             EmployeeId = employee.Id,
-            LeaveType = request.LeaveType.Trim(),
+            LeaveType = leaveType,
             StartDate = request.StartDate,
             EndDate = request.EndDate,
             Reason = request.Reason.Trim(),
@@ -192,6 +207,51 @@ public class LeaveController : ControllerBase
             .ToListAsync();
 
         return Ok(leaves);
+    }
+
+    // GET: api/Leave/balance
+    [HttpGet("balance")]
+    [Authorize(Roles = "Employee,Admin,HR,Manager")]
+    public async Task<IActionResult> GetMyLeaveBalance()
+    {
+        var employee = await GetCurrentEmployeeAsync();
+        if (employee == null)
+        {
+            return NotFound(new { message = "Employee profile not found." });
+        }
+
+        var year = DateTime.UtcNow.Year;
+        var yearStart = new DateOnly(year, 1, 1);
+        var yearEnd = new DateOnly(year, 12, 31);
+        var leaves = await _context.LeaveRequests
+            .Where(leave => leave.EmployeeId == employee.Id &&
+                leave.StartDate <= yearEnd && leave.EndDate >= yearStart)
+            .ToListAsync();
+
+        var balances = LeaveAllocations.Select(allocation =>
+        {
+            var usedDays = CountLeaveDays(leaves, allocation.Key, year, "Approved");
+            var pendingDays = CountLeaveDays(leaves, allocation.Key, year, "Pending");
+
+            return new
+            {
+                leaveType = allocation.Key,
+                totalDays = allocation.Value,
+                usedDays,
+                pendingDays,
+                remainingDays = allocation.Value == 0
+                    ? 0
+                    : Math.Max(allocation.Value - usedDays - pendingDays, 0)
+            };
+        });
+
+        return Ok(new
+        {
+            employeeId = employee.Id,
+            employeeName = $"{employee.FirstName} {employee.LastName}".Trim(),
+            year,
+            balances
+        });
     }
 
     // =========================================================
@@ -294,6 +354,22 @@ public class LeaveController : ControllerBase
             {
                 message = $"Leave request is already {leave.Status.ToLower()}."
             });
+        }
+
+        if (LeaveAllocations.TryGetValue(leave.LeaveType, out var allocation) && allocation > 0)
+        {
+            var year = DateTime.UtcNow.Year;
+            var usedDays = await GetLeaveDaysForStatusAsync(leave.EmployeeId, leave.LeaveType, year, "Approved", leave.Id);
+            var pendingDays = await GetLeaveDaysForStatusAsync(leave.EmployeeId, leave.LeaveType, year, "Pending", leave.Id);
+            var requestedDays = GetLeaveDays(leave.StartDate, leave.EndDate, year);
+
+            if (usedDays + pendingDays + requestedDays > allocation)
+            {
+                return BadRequest(new
+                {
+                    message = $"Cannot approve this request. The {leave.LeaveType} leave balance would exceed the {allocation}-day annual allowance."
+                });
+            }
         }
 
         // Check for another approved leave that overlaps
@@ -401,6 +477,12 @@ public class LeaveController : ControllerBase
             });
         }
 
+        var leaveType = NormalizeLeaveType(request.LeaveType);
+        if (leaveType == null)
+        {
+            return BadRequest(new { message = "Leave type must be Annual, Sick, Casual, or Unpaid." });
+        }
+
         var leave = await _context.LeaveRequests.FirstOrDefaultAsync(l => l.Id == id);
         if (leave == null)
         {
@@ -410,6 +492,19 @@ public class LeaveController : ControllerBase
         if (leave.Status != "Pending")
         {
             return BadRequest(new { message = "Only pending leave requests can be updated." });
+        }
+
+        var overlappingLeave = await _context.LeaveRequests
+            .AnyAsync(existing =>
+                existing.Id != leave.Id &&
+                existing.EmployeeId == leave.EmployeeId &&
+                (existing.Status == "Pending" || existing.Status == "Approved") &&
+                request.StartDate <= existing.EndDate &&
+                request.EndDate >= existing.StartDate);
+
+        if (overlappingLeave)
+        {
+            return BadRequest(new { message = "This leave period overlaps with another pending or approved leave." });
         }
 
         if (User.IsInRole("Employee"))
@@ -428,7 +523,7 @@ public class LeaveController : ControllerBase
             }
         }
 
-        leave.LeaveType = request.LeaveType.Trim();
+        leave.LeaveType = leaveType;
         leave.StartDate = request.StartDate;
         leave.EndDate = request.EndDate;
         leave.Reason = request.Reason.Trim();
@@ -538,6 +633,61 @@ public class LeaveController : ControllerBase
         {
             message = "Leave request deleted successfully."
         });
+    }
+
+    private async Task<Employee?> GetCurrentEmployeeAsync()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        return int.TryParse(userIdClaim, out var userId)
+            ? await _context.Employees.FirstOrDefaultAsync(employee => employee.UserId == userId)
+            : null;
+    }
+
+    private static string? NormalizeLeaveType(string leaveType)
+    {
+        return LeaveAllocations.Keys.FirstOrDefault(
+            type => type.Equals(leaveType.Trim(), StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static int CountLeaveDays(
+        IEnumerable<LeaveRequest> leaves,
+        string leaveType,
+        int year,
+        string status)
+    {
+        return leaves
+            .Where(leave => leave.LeaveType.Equals(leaveType, StringComparison.OrdinalIgnoreCase) && leave.Status == status)
+            .Sum(leave => GetLeaveDays(leave.StartDate, leave.EndDate, year));
+    }
+
+    private async Task<int> GetLeaveDaysForStatusAsync(
+        int employeeId,
+        string leaveType,
+        int year,
+        string status,
+        int excludedLeaveId)
+    {
+        var yearStart = new DateOnly(year, 1, 1);
+        var yearEnd = new DateOnly(year, 12, 31);
+        var leaves = await _context.LeaveRequests
+            .Where(leave => leave.EmployeeId == employeeId &&
+                leave.Id != excludedLeaveId &&
+                leave.Status == status &&
+                leave.LeaveType == leaveType &&
+                leave.StartDate <= yearEnd &&
+                leave.EndDate >= yearStart)
+            .ToListAsync();
+
+        return leaves.Sum(leave => GetLeaveDays(leave.StartDate, leave.EndDate, year));
+    }
+
+    private static int GetLeaveDays(DateOnly startDate, DateOnly endDate, int year)
+    {
+        var yearStart = new DateOnly(year, 1, 1);
+        var yearEnd = new DateOnly(year, 12, 31);
+        var start = startDate < yearStart ? yearStart : startDate;
+        var end = endDate > yearEnd ? yearEnd : endDate;
+        return end < start ? 0 : end.DayNumber - start.DayNumber + 1;
     }
 }
 
