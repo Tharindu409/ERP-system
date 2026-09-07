@@ -12,6 +12,7 @@ import Users from "./pages/Users";
 import ProtectedRoute from "./components/ProtectedRoute";
 import MainLayout from "./components/MainLayout";
 import Profile from "./pages/Profile";
+import Reports from "./pages/Reports";
 
 function App() {
   return (
@@ -175,31 +176,6 @@ function App() {
         />
 
         {/* ================================================= */}
-        {/* PROFILE */}
-        {/* ================================================= */}
-
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute
-              allowedRoles={[
-                "Admin",
-                "HR",
-                "Manager",
-                "Employee",
-              ]}
-            >
-              <MainLayout>
-                <div>
-                  <h2>My Profile</h2>
-                  <p>Profile page coming soon.</p>
-                </div>
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        {/* ================================================= */}
         {/* REPORTS */}
         {/* ================================================= */}
 
@@ -214,10 +190,7 @@ function App() {
               ]}
             >
               <MainLayout>
-                <div>
-                  <h2>Reports</h2>
-                  <p>Reports page coming soon.</p>
-                </div>
+                <Reports />
               </MainLayout>
             </ProtectedRoute>
           }
