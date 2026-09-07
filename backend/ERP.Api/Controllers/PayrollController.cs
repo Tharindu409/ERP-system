@@ -85,6 +85,7 @@ public class PayrollController : ControllerBase
 
     // GENERATE PAYROLL
     [HttpPost("generate")]
+    [Authorize(Roles = "Admin,HR")]
     public async Task<IActionResult> GeneratePayroll(
         [FromBody] GeneratePayrollRequest request)
     {
@@ -214,10 +215,19 @@ public class PayrollController : ControllerBase
 
     // UPDATE PAYROLL
     [HttpPut("{id:int}")]
+    [Authorize(Roles = "Admin,HR")]
     public async Task<IActionResult> UpdatePayroll(
         int id,
         [FromBody] UpdatePayrollRequest request)
     {
+        if (request == null)
+        {
+            return BadRequest(new
+            {
+                message = "Payroll update data is required."
+            });
+        }
+
         var payroll = await _context.Payrolls
             .FirstOrDefaultAsync(p => p.Id == id);
 

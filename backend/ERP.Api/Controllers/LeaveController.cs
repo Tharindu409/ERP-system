@@ -378,6 +378,76 @@ public class LeaveController : ControllerBase
     }
 
     // =========================================================
+    // UPDATE LEAVE
+    // Employee can update own pending request; Admin / HR / Manager can update pending requests
+    // =========================================================
+
+    [HttpPut("{id:int}")]
+    [Authorize(Roles = "Employee,Admin,HR,Manager")]
+    public async Task<IActionResult> UpdateLeave(
+        int id,
+        [FromBody] ApplyLeaveRequest request)
+    {
+        if (request == null ||
+            string.IsNullOrWhiteSpace(request.LeaveType) ||
+            request.StartDate == default ||
+            request.EndDate == default ||
+            request.EndDate < request.StartDate ||
+            string.IsNullOrWhiteSpace(request.Reason))
+        {
+            return BadRequest(new
+            {
+                message = "Leave type, valid dates, and reason are required."
+            });
+        }
+
+        var leave = await _context.LeaveRequests.FirstOrDefaultAsync(l => l.Id == id);
+        if (leave == null)
+        {
+            return NotFound(new { message = "Leave request not found." });
+        }
+
+        if (leave.Status != "Pending")
+        {
+            return BadRequest(new { message = "Only pending leave requests can be updated." });
+        }
+
+        if (User.IsInRole("Employee"))
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized(new { message = "Invalid user information." });
+            }
+
+            var ownsRequest = await _context.Employees
+                .AnyAsync(employee => employee.Id == leave.EmployeeId && employee.UserId == userId);
+            if (!ownsRequest)
+            {
+                return Forbid();
+            }
+        }
+
+        leave.LeaveType = request.LeaveType.Trim();
+        leave.StartDate = request.StartDate;
+        leave.EndDate = request.EndDate;
+        leave.Reason = request.Reason.Trim();
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = "Leave request updated successfully.",
+            leaveRequestId = leave.Id,
+            leave.LeaveType,
+            leave.StartDate,
+            leave.EndDate,
+            leave.Reason,
+            leave.Status
+        });
+    }
+
+    // =========================================================
     // CANCEL MY LEAVE
     // =========================================================
 

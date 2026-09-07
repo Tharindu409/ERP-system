@@ -4,6 +4,7 @@ using ERP.Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace ERP.Api.Controllers;
 
@@ -17,6 +18,58 @@ public class EmployeeController : ControllerBase
     public EmployeeController(AppDbContext context)
     {
         _context = context;
+    }
+
+    // GET: api/Employee/me
+    [HttpGet("me")]
+    [Authorize(Roles = "Admin,HR,Manager,Employee")]
+    public async Task<IActionResult> GetMyProfile()
+    {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized(new { message = "Invalid user information." });
+        }
+
+        var profile = await _context.Employees
+            .Include(employee => employee.User)
+                .ThenInclude(user => user!.Role)
+            .Include(employee => employee.Department)
+            .Where(employee => employee.UserId == userId)
+            .Select(employee => new
+            {
+                employee.Id,
+                employee.UserId,
+                employee.FirstName,
+                employee.LastName,
+                employee.Phone,
+                employee.Address,
+                employee.HireDate,
+                employee.Salary,
+                employee.IsActive,
+                Department = employee.Department == null ? null : new
+                {
+                    employee.Department.Id,
+                    employee.Department.Name,
+                    employee.Department.Description
+                },
+                User = employee.User == null ? null : new
+                {
+                    employee.User.Id,
+                    employee.User.Username,
+                    employee.User.Email,
+                    employee.User.IsActive,
+                    Role = employee.User.Role == null ? null : employee.User.Role.Name
+                }
+            })
+            .FirstOrDefaultAsync();
+
+        if (profile == null)
+        {
+            return NotFound(new { message = "Employee profile not found." });
+        }
+
+        return Ok(profile);
     }
 
     // GET: api/Employee

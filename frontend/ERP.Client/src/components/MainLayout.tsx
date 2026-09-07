@@ -55,7 +55,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
           >
             <Typography
               variant="h6"
-              fontWeight="600"
+              sx={{ fontWeight: 600 }}
             >
               Human Resource Management
             </Typography>
@@ -84,7 +84,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
               <Box sx={{ ml: 1 }}>
                 <Typography
                   variant="body2"
-                  fontWeight="600"
+                  sx={{ fontWeight: 600 }}
                 >
                   {user?.username}
                 </Typography>

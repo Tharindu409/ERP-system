@@ -1,152 +1,270 @@
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-
-import { AuthProvider } from "./context/AuthContext";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import Employees from "./pages/Employees";
+import Departments from "./pages/Departments";
+import Attendance from "./pages/Attendance";
+import Leave from "./pages/Leave";
+import Payroll from "./pages/Payroll";
+import Users from "./pages/Users";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import MainLayout from "./components/MainLayout";
-import Employees from "./pages/Employees";
+import Profile from "./pages/Profile";
 
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Routes>
+      <Routes>
 
-          {/* Login */}
-          <Route
-            path="/login"
-            element={<Login />}
-          />
+        {/* ================================================= */}
+        {/* LOGIN */}
+        {/* ================================================= */}
 
-          {/* Protected Dashboard */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <Dashboard />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/login"
+          element={<Login />}
+        />
 
-          {/* Future Pages */}
+        {/* ================================================= */}
+        {/* DASHBOARD */}
+        {/* ================================================= */}
 
-          <Route
-  path="/employees"
-  element={
-    <ProtectedRoute>
-      <MainLayout>
-        <Employees />
-      </MainLayout>
-    </ProtectedRoute>
-  }
-/>
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "Admin",
+                "HR",
+                "Manager",
+                "Employee",
+              ]}
+            >
+              <MainLayout>
+                <Dashboard />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/departments"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <div>
-                    <h1>Departments</h1>
-                    <p>Department management coming next.</p>
-                  </div>
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
+        {/* ================================================= */}
+        {/* EMPLOYEES */}
+        {/* ================================================= */}
 
-          <Route
-            path="/attendance"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <div>
-                    <h1>Attendance</h1>
-                    <p>Attendance management coming next.</p>
-                  </div>
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/employees"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "Admin",
+                "HR",
+                "Manager",
+              ]}
+            >
+              <MainLayout>
+                <Employees />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/leave"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <div>
-                    <h1>Leave Management</h1>
-                    <p>Leave management coming next.</p>
-                  </div>
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
+        {/* ================================================= */}
+        {/* DEPARTMENTS */}
+        {/* ================================================= */}
 
-          <Route
-            path="/payroll"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <div>
-                    <h1>Payroll</h1>
-                    <p>Payroll management coming next.</p>
-                  </div>
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/departments"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "Admin",
+                "HR",
+              ]}
+            >
+              <MainLayout>
+                <Departments />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/users"
-            element={
-              <ProtectedRoute>
-                <MainLayout>
-                  <div>
-                    <h1>User Management</h1>
-                    <p>User management coming next.</p>
-                  </div>
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
+        {/* ================================================= */}
+        {/* ATTENDANCE */}
+        {/* ================================================= */}
 
-          {/* Default */}
-          <Route
-            path="/"
-            element={
-              <Navigate
-                to="/dashboard"
-                replace
-              />
-            }
-          />
+        <Route
+          path="/attendance"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "Admin",
+                "HR",
+                "Manager",
+                "Employee",
+              ]}
+            >
+              <MainLayout>
+                <Attendance />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
 
-          {/* Unknown URL */}
-          <Route
-            path="*"
-            element={
-              <Navigate
-                to="/dashboard"
-                replace
-              />
-            }
-          />
+        {/* ================================================= */}
+        {/* LEAVE */}
+        {/* ================================================= */}
 
-        </Routes>
-      </AuthProvider>
+        <Route
+          path="/leave"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "Admin",
+                "HR",
+                "Manager",
+                "Employee",
+              ]}
+            >
+              <MainLayout>
+                <Leave />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================================================= */}
+        {/* PAYROLL */}
+        {/* ================================================= */}
+
+        <Route
+          path="/payroll"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "Admin",
+                "HR",
+                "Manager",
+              ]}
+            >
+              <MainLayout>
+                <Payroll />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================================================= */}
+        {/* USER MANAGEMENT */}
+        {/* ================================================= */}
+
+        <Route
+          path="/users"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "Admin",
+              ]}
+            >
+              <MainLayout>
+                <Users />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================================================= */}
+        {/* PROFILE */}
+        {/* ================================================= */}
+
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "Admin",
+                "HR",
+                "Manager",
+                "Employee",
+              ]}
+            >
+              <MainLayout>
+                <div>
+                  <h2>My Profile</h2>
+                  <p>Profile page coming soon.</p>
+                </div>
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================================================= */}
+        {/* REPORTS */}
+        {/* ================================================= */}
+
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "Admin",
+                "HR",
+                "Manager",
+              ]}
+            >
+              <MainLayout>
+                <div>
+                  <h2>Reports</h2>
+                  <p>Reports page coming soon.</p>
+                </div>
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ================================================= */}
+        {/* DEFAULT */}
+        {/* ================================================= */}
+
+        <Route
+          path="*"
+          element={
+            <NavigateToDashboard />
+          }
+        />
+
+       <Route
+          path="/profile"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "Admin",
+                "HR",
+                "Manager",
+                "Employee",
+              ]}
+            >
+              <MainLayout>
+                <Profile />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+      </Routes>
     </BrowserRouter>
   );
+}
+
+// Simple default redirect component
+function NavigateToDashboard() {
+  return <DashboardRedirect />;
+}
+
+function DashboardRedirect() {
+  window.location.href = "/dashboard";
+  return null;
 }
 
 export default App;

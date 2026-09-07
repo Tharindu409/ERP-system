@@ -69,7 +69,7 @@ const Login = () => {
           <Typography
             variant="h4"
             align="center"
-            fontWeight="bold"
+            sx={{ fontWeight: "bold" }}
             gutterBottom
           >
             HR ERP

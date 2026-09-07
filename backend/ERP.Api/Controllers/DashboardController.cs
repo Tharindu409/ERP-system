@@ -45,6 +45,12 @@ public class DashboardController : ControllerBase
         var inactiveUsers = await _context.Users
             .CountAsync(u => !u.IsActive);
 
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        var monthlyPayroll = await _context.Payrolls
+            .Where(payroll => payroll.Year == today.Year && payroll.Month == today.Month)
+            .Select(payroll => (decimal?)payroll.NetSalary)
+            .SumAsync() ?? 0m;
+
         return Ok(new
         {
             employees = new
@@ -64,7 +70,16 @@ public class DashboardController : ControllerBase
                 total = totalUsers,
                 active = activeUsers,
                 inactive = inactiveUsers
-            }
+            },
+            today = new
+            {
+                attendance = await _context.Attendances.CountAsync(attendance => attendance.Date == today),
+                present = await _context.Attendances.CountAsync(attendance => attendance.Date == today && attendance.Status == "Present"),
+                absent = await _context.Attendances.CountAsync(attendance => attendance.Date == today && attendance.Status == "Absent"),
+                leave = await _context.Attendances.CountAsync(attendance => attendance.Date == today && attendance.Status == "Leave")
+            },
+            pendingLeave = await _context.LeaveRequests.CountAsync(leave => leave.Status == "Pending"),
+            monthlyPayroll
         });
     }
 

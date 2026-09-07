@@ -6,6 +6,8 @@ import {
   EventNote,
   Payments,
   ManageAccounts,
+  AccountCircle,
+  BarChart,
   Logout,
 } from "@mui/icons-material";
 
@@ -25,50 +27,92 @@ import { useAuth } from "../context/AuthContext";
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useAuth();
+
+  const { logout, user } = useAuth();
+
+  const role = user?.role;
+
+  // =========================================================
+  // Menu Items
+  // =========================================================
 
   const menuItems = [
     {
       name: "Dashboard",
       path: "/dashboard",
       icon: <DashboardIcon />,
+      roles: ["Admin", "HR", "Manager", "Employee"],
     },
     {
       name: "Employees",
       path: "/employees",
       icon: <People />,
+      roles: ["Admin", "HR", "Manager"],
     },
     {
       name: "Departments",
       path: "/departments",
       icon: <Business />,
+      roles: ["Admin", "HR"],
     },
     {
       name: "Attendance",
       path: "/attendance",
       icon: <AccessTime />,
+      roles: ["Admin", "HR", "Manager", "Employee"],
     },
     {
       name: "Leave Management",
       path: "/leave",
       icon: <EventNote />,
+      roles: ["Admin", "HR", "Manager", "Employee"],
     },
     {
       name: "Payroll",
       path: "/payroll",
       icon: <Payments />,
+      roles: ["Admin", "HR", "Manager"],
+    },
+    {
+      name: "My Profile",
+      path: "/profile",
+      icon: <AccountCircle />,
+      roles: ["Admin", "HR", "Manager", "Employee"],
+    },
+    {
+      name: "Reports",
+      path: "/reports",
+      icon: <BarChart />,
+      roles: ["Admin", "HR", "Manager"],
     },
     {
       name: "User Management",
       path: "/users",
       icon: <ManageAccounts />,
+      roles: ["Admin"],
     },
   ];
+
+  // =========================================================
+  // Filter Menu According To Role
+  // =========================================================
+
+  const filteredMenuItems = menuItems.filter((item) =>
+    item.roles.includes(role || "")
+  );
+
+  // =========================================================
+  // Logout
+  // =========================================================
 
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
+
+  // =========================================================
+  // UI
+  // =========================================================
 
   return (
     <Box
@@ -96,18 +140,30 @@ const Sidebar = () => {
       >
         <Typography
           variant="h5"
-          fontWeight="bold"
-          sx={{ color: "white" }}
+          sx={{
+            color: "white",
+            fontWeight: "bold",
+          }}
         >
           HR ERP
         </Typography>
       </Box>
 
-      <Divider sx={{ borderColor: "rgba(255,255,255,0.1)" }} />
+      <Divider
+        sx={{
+          borderColor: "rgba(255,255,255,0.1)",
+        }}
+      />
 
       {/* Menu */}
-      <List sx={{ px: 1.5, py: 2, flex: 1 }}>
-        {menuItems.map((item) => {
+      <List
+        sx={{
+          px: 1.5,
+          py: 2,
+          flex: 1,
+        }}
+      >
+        {filteredMenuItems.map((item) => {
           const active = location.pathname === item.path;
 
           return (
@@ -117,7 +173,10 @@ const Sidebar = () => {
               sx={{
                 borderRadius: 2,
                 mb: 0.5,
-                color: active ? "white" : "#9ca3af",
+
+                color: active
+                  ? "white"
+                  : "#9ca3af",
 
                 backgroundColor: active
                   ? "#2563eb"
@@ -127,6 +186,7 @@ const Sidebar = () => {
                   backgroundColor: active
                     ? "#2563eb"
                     : "#1f2937",
+
                   color: "white",
                 },
               }}
@@ -140,7 +200,9 @@ const Sidebar = () => {
                 {item.icon}
               </ListItemIcon>
 
-              <ListItemText primary={item.name} />
+              <ListItemText
+                primary={item.name}
+              />
             </ListItemButton>
           );
         })}

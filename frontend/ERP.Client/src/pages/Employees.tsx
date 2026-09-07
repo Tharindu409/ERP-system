@@ -90,7 +90,7 @@ const Employees = () => {
 
   const loadDepartments = async () => {
     try {
-      const response = await api.get("/Departments");
+      const response = await api.get("/Department");
 
       setDepartments(response.data);
     } catch (error) {
@@ -251,9 +251,9 @@ const Employees = () => {
         }}
       >
         <Box>
-          < Typography
+          <Typography
             variant="h4"
-            fontWeight="bold"
+            sx={{ fontWeight: "bold" }}
           >
             Employees
           </Typography>
@@ -385,7 +385,7 @@ const Employees = () => {
                     <Box>
                       <Typography
                         variant="h6"
-                        fontWeight="bold"
+                        sx={{ fontWeight: "bold" }}
                       >
                         {employee.firstName}{" "}
                         {employee.lastName}
@@ -513,18 +513,6 @@ const Employees = () => {
     ))}
   </TextField>
 </Grid>
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label="Department ID"
-                name="departmentId"
-                type="number"
-                value={form.departmentId}
-                onChange={handleInputChange}
-                required
-              />
-            </Grid>
-
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
