@@ -100,11 +100,17 @@ const Sidebar = () => {
       roles: ["Admin"],
     },
     {
-  name: "Attendance Reports",
-  path: "/attendance-reports",
-  icon: <Assessment />,
-  roles: ["Admin", "HR", "Manager"],
-},
+      name: "Attendance Reports",
+      path: "/attendance-reports",
+      icon: <Assessment />,
+      roles: ["Admin", "HR", "Manager"],
+    },
+    {
+      name: "Employee Summary",
+      path: "/employee-attendance-summary",
+      icon: <Assessment />,
+      roles: ["Admin", "HR", "Manager"],
+    },
   ];
 
   // =========================================================

@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   CircularProgress,
   Grid,
   MenuItem,
@@ -15,11 +16,11 @@ import {
 import {
   Assessment,
   CheckCircle,
-  EventBusy,
   EventAvailable,
   Schedule,
 } from "@mui/icons-material";
 
+import { isAxiosError } from "axios";
 import api from "../api/axios";
 
 interface Employee {
@@ -58,6 +59,16 @@ interface ReportResponse {
   records: AttendanceRecord[];
 }
 
+interface ApiErrorResponse {
+  message?: string;
+}
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  return isAxiosError<ApiErrorResponse>(error)
+    ? error.response?.data?.message || fallback
+    : fallback;
+};
+
 const AttendanceReports = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [report, setReport] = useState<ReportResponse | null>(null);
@@ -67,7 +78,6 @@ const AttendanceReports = () => {
   const [employeeId, setEmployeeId] = useState("");
 
   const [loading, setLoading] = useState(false);
-  const [employeesLoading, setEmployeesLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -77,20 +87,12 @@ const AttendanceReports = () => {
 
   const loadEmployees = async () => {
     try {
-      setEmployeesLoading(true);
-
       const response = await api.get("/Employee");
 
       setEmployees(response.data);
     } catch (error: any) {
       console.error("Employee loading error:", error);
-
-      setError(
-        error.response?.data?.message ||
-          "Failed to load employees."
-      );
-    } finally {
-      setEmployeesLoading(false);
+      setError(getErrorMessage(error, "Failed to load employees."));
     }
   };
 
@@ -99,7 +101,7 @@ const AttendanceReports = () => {
       setLoading(true);
       setError("");
 
-      const params: any = {};
+      const params: Record<string, string | number> = {};
 
       if (fromDate) {
         params.fromDate = fromDate;
@@ -121,13 +123,9 @@ const AttendanceReports = () => {
       );
 
       setReport(response.data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Attendance report error:", error);
-
-      setError(
-        error.response?.data?.message ||
-          "Failed to load attendance report."
-      );
+      setError(getErrorMessage(error, "Failed to load attendance report."));
     } finally {
       setLoading(false);
     }
@@ -161,37 +159,13 @@ const AttendanceReports = () => {
     return time.substring(0, 5);
   };
 
-  const getStatusStyle = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case "present":
-        return {
-          backgroundColor: "#dcfce7",
-          color: "#166534",
-        };
-
-      case "late":
-        return {
-          backgroundColor: "#fef3c7",
-          color: "#92400e",
-        };
-
-      case "absent":
-        return {
-          backgroundColor: "#fee2e2",
-          color: "#991b1b",
-        };
-
-      case "leave":
-        return {
-          backgroundColor: "#dbeafe",
-          color: "#1e40af",
-        };
-
-      default:
-        return {
-          backgroundColor: "#f3f4f6",
-          color: "#374151",
-        };
+  const getStatusColor = (status: string): "success" | "warning" | "error" | "info" | "default" => {
+    switch (status.toLowerCase()) {
+      case "present": return "success";
+      case "late": return "warning";
+      case "absent": return "error";
+      case "leave": return "info";
+      default: return "default";
     }
   };
 
@@ -820,15 +794,10 @@ const AttendanceReports = () => {
 
                     <tbody>
                       {report.records.map(
-                        (record) => {
-                          const statusStyle =
-                            getStatusStyle(
-                              record.status
-                            );
-
+                        (record, index) => {
                           return (
                             <tr
-                              key={record.id}
+                              key={`${record.id}-${record.date}-${index}`}
                               style={{
                                 borderBottom:
                                   "1px solid #f3f4f6",
@@ -891,24 +860,7 @@ const AttendanceReports = () => {
                                   padding: "14px",
                                 }}
                               >
-                                <span
-                                  style={{
-                                    display:
-                                      "inline-block",
-                                    padding:
-                                      "5px 10px",
-                                    borderRadius:
-                                      "20px",
-                                    fontSize:
-                                      "13px",
-                                    fontWeight: 600,
-                                    ...statusStyle,
-                                  }}
-                                >
-                                  {
-                                    record.status
-                                  }
-                                </span>
+                                <Chip size="small" color={getStatusColor(record.status)} label={record.status} />
                               </td>
 
                               <td

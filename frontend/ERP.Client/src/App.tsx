@@ -15,6 +15,7 @@ import MainLayout from "./components/MainLayout";
 import Profile from "./pages/Profile";
 import Reports from "./pages/Reports";
 import AttendanceReports from "./pages/AttendanceReports";
+import EmployeeAttendanceSummary from "./pages/EmployeeAttendanceSummary";
 
 function App() {
   return (
@@ -255,6 +256,17 @@ function App() {
     </ProtectedRoute>
   }
 />
+
+        <Route
+          path="/employee-attendance-summary"
+          element={
+            <ProtectedRoute allowedRoles={["Admin", "HR", "Manager"]}>
+              <MainLayout>
+                <EmployeeAttendanceSummary />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
 
       </Routes>
     </BrowserRouter>

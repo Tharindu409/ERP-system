@@ -1,223 +1,163 @@
-import { useEffect, useState } from "react";
-
+import { useEffect, useState, type ReactNode } from "react";
 import {
+  Alert,
   Box,
   Card,
   CardContent,
+  CircularProgress,
   Grid,
+  LinearProgress,
   Typography,
 } from "@mui/material";
-
-import PeopleIcon from "@mui/icons-material/People";
-import BusinessIcon from "@mui/icons-material/Business";
-import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
-import PersonIcon from "@mui/icons-material/Person";
-
+import {
+  AccessTime,
+  EventAvailable,
+  EventBusy,
+  People,
+  Payments,
+  Schedule,
+} from "@mui/icons-material";
+import { isAxiosError } from "axios";
 import api from "../api/axios";
+import { useAuth } from "../context/AuthContext";
 
-interface DashboardData {
-  employees: {
-    total: number;
-    active: number;
-    inactive: number;
-  };
-
-  departments: {
-    total: number;
-  };
-
-  users: {
-    total: number;
-    active: number;
-    inactive: number;
-  };
-  today: {
-    attendance: number;
-    present: number;
-    absent: number;
-    leave: number;
-  };
-  pendingLeave: number;
-  monthlyPayroll: number;
+interface DashboardAnalytics {
+  isManagement: boolean;
+  totalEmployees: number;
+  presentToday: number;
+  lateToday: number;
+  absentToday: number;
+  onLeaveToday: number;
+  attendancePercentage: number;
+  completedCheckOuts: number;
+  notCheckedOut: number;
+  pendingLeaveRequests: number;
+  approvedLeaveRequests: number;
+  rejectedLeaveRequests: number;
+  payrollProcessed: number;
+  payrollTotal: number;
 }
 
-const Dashboard = () => {
-  const [dashboard, setDashboard] =
-    useState<DashboardData | null>(null);
+interface ApiErrorResponse {
+  message?: string;
+}
 
+interface MetricCardProps {
+  label: string;
+  value: string | number;
+  icon: ReactNode;
+  color: string;
+}
+
+const getErrorMessage = (error: unknown) => {
+  if (isAxiosError<ApiErrorResponse>(error)) {
+    return error.response?.data?.message || "Unable to load dashboard analytics.";
+  }
+  return "Unable to load dashboard analytics.";
+};
+
+const MetricCard = ({ label, value, icon, color }: MetricCardProps) => (
+  <Card sx={{ height: "100%", border: "1px solid #e5e7eb", borderRadius: 3 }}>
+    <CardContent>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Box>
+          <Typography variant="body2" color="text.secondary">{label}</Typography>
+          <Typography variant="h4" sx={{ fontWeight: "bold", mt: 1 }}>{value}</Typography>
+        </Box>
+        <Box sx={{ width: 48, height: 48, borderRadius: 2, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: `${color}18`, color }}>
+          {icon}
+        </Box>
+      </Box>
+    </CardContent>
+  </Card>
+);
+
+const Dashboard = () => {
+  const { user } = useAuth();
+  const [analytics, setAnalytics] = useState<DashboardAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const isManagement = ["Admin", "HR", "Manager"].includes(user?.role || "");
 
   useEffect(() => {
-    const loadDashboard = async () => {
+    const loadAnalytics = async () => {
       try {
-        const response = await api.get("/Dashboard");
-
-        setDashboard(response.data);
-      } catch (error) {
-        setError("Unable to load dashboard data. Check that the API is running and you are logged in.");
-        console.error(
-          "Dashboard loading error:",
-          error
-        );
+        setLoading(true);
+        const response = await api.get<DashboardAnalytics>("/Dashboard/analytics");
+        setAnalytics(response.data);
+      } catch (requestError: unknown) {
+        setError(getErrorMessage(requestError));
       } finally {
         setLoading(false);
       }
     };
 
-    loadDashboard();
+    void loadAnalytics();
   }, []);
 
   if (loading) {
-    return (
-      <Typography>
-        Loading dashboard...
-      </Typography>
-    );
+    return <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}><CircularProgress /></Box>;
   }
 
-  if (error) {
-    return <Typography color="error">{error}</Typography>;
+  if (error || !analytics) {
+    return <Alert severity="error">{error || "Dashboard analytics are unavailable."}</Alert>;
   }
 
-  const cards = [
-    {
-      title: "Total Employees",
-      value: dashboard?.employees.total ?? 0,
-      icon: <PeopleIcon />,
-    },
-    {
-      title: "Active Employees",
-      value: dashboard?.employees.active ?? 0,
-      icon: <PersonIcon />,
-    },
-    {
-      title: "Departments",
-      value: dashboard?.departments.total ?? 0,
-      icon: <BusinessIcon />,
-    },
-    {
-      title: "Total Users",
-      value: dashboard?.users.total ?? 0,
-      icon: <ManageAccountsIcon />,
-    },
-    {
-      title: "Today's Attendance",
-      value: dashboard?.today.attendance ?? 0,
-      icon: <PersonIcon />,
-    },
-    {
-      title: "Pending Leave",
-      value: dashboard?.pendingLeave ?? 0,
-      icon: <BusinessIcon />,
-    },
-    {
-      title: "Monthly Payroll",
-      value: (dashboard?.monthlyPayroll ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 }),
-      icon: <ManageAccountsIcon />,
-    },
+  const attendanceTotal = analytics.presentToday + analytics.lateToday + analytics.absentToday + analytics.onLeaveToday;
+  const overview = [
+    { label: "Present", value: analytics.presentToday, color: "#16a34a" },
+    { label: "Late", value: analytics.lateToday, color: "#d97706" },
+    { label: "Absent", value: analytics.absentToday, color: "#dc2626" },
+    { label: "Leave", value: analytics.onLeaveToday, color: "#2563eb" },
   ];
 
   return (
     <Box>
-
       <Box sx={{ mb: 4 }}>
-        <Typography
-          variant="h4"
-          sx={{ fontWeight: "bold" }}
-        >
-          Dashboard
-        </Typography>
-
-        <Typography
-          color="text.secondary"
-          sx={{ mt: 0.5 }}
-        >
-          Overview of your HR system
+        <Typography variant="h4" sx={{ fontWeight: "bold" }}>Dashboard</Typography>
+        <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+          {isManagement ? "HR workforce and attendance overview" : "Your attendance and leave overview"}
         </Typography>
       </Box>
 
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}><MetricCard label={isManagement ? "Total Employees" : "My Account"} value={analytics.totalEmployees} icon={<People />} color="#2563eb" /></Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}><MetricCard label="Present Today" value={analytics.presentToday} icon={<EventAvailable />} color="#16a34a" /></Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}><MetricCard label="Late Today" value={analytics.lateToday} icon={<Schedule />} color="#d97706" /></Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}><MetricCard label="Absent Today" value={analytics.absentToday} icon={<EventBusy />} color="#dc2626" /></Grid>
+        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}><MetricCard label="On Leave Today" value={analytics.onLeaveToday} icon={<AccessTime />} color="#2563eb" /></Grid>
+      </Grid>
+
       <Grid container spacing={3}>
-
-        {cards.map((card) => (
-          <Grid
-            key={card.title}
-            size={{
-              xs: 12,
-              sm: 6,
-              md: 3,
-            }}
-          >
-            <Card
-              elevation={0}
-              sx={{
-                border: "1px solid #e5e7eb",
-                borderRadius: 3,
-              }}
-            >
-              <CardContent>
-
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-
-                  <Box>
-                    <Typography
-                      color="text.secondary"
-                      variant="body2"
-                    >
-                      {card.title}
-                    </Typography>
-
-                    <Typography
-                      variant="h3"
-                      sx={{ mt: 1 }}
-                    >
-                      {card.value}
-                    </Typography>
-                  </Box>
-
-                  <Box
-                    sx={{
-                      width: 50,
-                      height: 50,
-                      borderRadius: 2,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      backgroundColor: "#eff6ff",
-                      color: "#2563eb",
-                    }}
-                  >
-                    {card.icon}
-                  </Box>
-
-                </Box>
-
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-
-      </Grid>
-
-      <Grid container spacing={3} sx={{ mt: 1 }}>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card><CardContent><Typography variant="h6" sx={{ fontWeight: "bold", mb: 2 }}>Attendance Overview</Typography>{[
-            ["Present", dashboard?.today.present ?? 0, "#16a34a"],
-            ["Absent", dashboard?.today.absent ?? 0, "#dc2626"],
-            ["Leave", dashboard?.today.leave ?? 0, "#ca8a04"],
-          ].map(([label, value, color]) => <Box key={label as string} sx={{ mb: 2 }}><Box sx={{ display: "flex", justifyContent: "space-between" }}><Typography>{label}</Typography><Typography sx={{ fontWeight: "bold" }}>{value}</Typography></Box><Box sx={{ height: 8, bgcolor: "#e5e7eb", borderRadius: 4, mt: 0.5 }}><Box sx={{ height: "100%", width: `${dashboard?.today.attendance ? Number(value) / dashboard.today.attendance * 100 : 0}%`, bgcolor: color, borderRadius: 4 }} /></Box></Box>)}</CardContent></Card>
+        <Grid size={{ xs: 12, md: 7 }}>
+          <Card><CardContent>
+            <Typography variant="h6" sx={{ fontWeight: "bold", mb: 3 }}>Attendance Overview</Typography>
+            <Typography color="text.secondary" sx={{ mb: 1 }}>Attendance percentage</Typography>
+            <Typography variant="h4" sx={{ fontWeight: "bold", mb: 1 }}>{analytics.attendancePercentage.toFixed(2)}%</Typography>
+            <LinearProgress variant="determinate" value={Math.min(analytics.attendancePercentage, 100)} sx={{ height: 9, borderRadius: 5, mb: 3 }} />
+            {overview.map((item) => (
+              <Box key={item.label} sx={{ mb: 2 }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}><Typography>{item.label}</Typography><Typography sx={{ fontWeight: "bold" }}>{item.value}</Typography></Box>
+                <LinearProgress variant="determinate" value={attendanceTotal ? (item.value / attendanceTotal) * 100 : 0} sx={{ height: 7, borderRadius: 4, "& .MuiLinearProgress-bar": { bgcolor: item.color } }} />
+              </Box>
+            ))}
+          </CardContent></Card>
         </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card><CardContent><Typography variant="h6" sx={{ fontWeight: "bold", mb: 2 }}>HR Snapshot</Typography><Typography color="text.secondary">Active employees</Typography><Typography variant="h4" sx={{ fontWeight: "bold", mb: 2 }}>{dashboard?.employees.active ?? 0}</Typography><Typography color="text.secondary">Inactive employees</Typography><Typography variant="h4" sx={{ fontWeight: "bold", mb: 2 }}>{dashboard?.employees.inactive ?? 0}</Typography><Typography color="text.secondary">Open leave requests awaiting review</Typography><Typography variant="h4" sx={{ fontWeight: "bold" }}>{dashboard?.pendingLeave ?? 0}</Typography></CardContent></Card>
+        <Grid size={{ xs: 12, md: 5 }}>
+          <Card sx={{ mb: 3 }}><CardContent>
+            <Typography variant="h6" sx={{ fontWeight: "bold", mb: 2 }}>Leave Overview</Typography>
+            <Typography color="text.secondary">Pending requests</Typography><Typography variant="h4" sx={{ fontWeight: "bold", mb: 2 }}>{analytics.pendingLeaveRequests}</Typography>
+            <Typography color="text.secondary">Approved requests</Typography><Typography variant="h4" sx={{ fontWeight: "bold", mb: 2 }}>{analytics.approvedLeaveRequests}</Typography>
+            <Typography color="text.secondary">Rejected requests</Typography><Typography variant="h4" sx={{ fontWeight: "bold" }}>{analytics.rejectedLeaveRequests}</Typography>
+          </CardContent></Card>
+          <Card><CardContent>
+            <Typography variant="h6" sx={{ fontWeight: "bold", mb: 2 }}>Payroll Overview</Typography>
+            <Typography color="text.secondary">Processed this month</Typography><Typography variant="h4" sx={{ fontWeight: "bold", mb: 2 }}>{analytics.payrollProcessed}</Typography>
+            <Typography color="text.secondary">Net payroll</Typography><Typography variant="h5" sx={{ fontWeight: "bold" }}>{analytics.payrollTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Typography>
+            <Payments color="primary" sx={{ mt: 1 }} />
+          </CardContent></Card>
         </Grid>
       </Grid>
-
     </Box>
   );
 };
