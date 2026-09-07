@@ -8,6 +8,7 @@ import Attendance from "./pages/Attendance";
 import Leave from "./pages/Leave";
 import LeaveBalance from "./pages/LeaveBalance";
 import Payroll from "./pages/Payroll";
+import PayrollReports from "./pages/PayrollReports";
 import Users from "./pages/Users";
 
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -167,6 +168,17 @@ function App() {
             >
               <MainLayout>
                 <Payroll />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/payroll-reports"
+          element={
+            <ProtectedRoute allowedRoles={["Admin", "HR", "Manager"]}>
+              <MainLayout>
+                <PayrollReports />
               </MainLayout>
             </ProtectedRoute>
           }

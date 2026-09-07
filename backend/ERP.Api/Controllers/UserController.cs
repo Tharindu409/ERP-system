@@ -19,7 +19,7 @@ public class UsersController : ControllerBase
     }
 
     // =========================================================
-    // GET: api/users
+    // GET: api/Users
     // Get all users
     // =========================================================
     [HttpGet]
@@ -42,8 +42,8 @@ public class UsersController : ControllerBase
 
 
     // =========================================================
-    // GET: api/users/{id}
-    // Get user by ID
+    // GET: api/Users/{id}
+    // Get single user
     // =========================================================
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetUser(int id)
@@ -74,7 +74,196 @@ public class UsersController : ControllerBase
 
 
     // =========================================================
-    // PUT: api/users/{id}/role
+    // POST: api/Users
+    // Create a new user
+    // Admin only
+    // =========================================================
+    [HttpPost]
+    public async Task<IActionResult> CreateUser(
+        [FromBody] CreateUserRequest request)
+    {
+        if (request == null)
+        {
+            return BadRequest(new
+            {
+                message = "User data is required."
+            });
+        }
+
+        // -------------------------
+        // Validate username
+        // -------------------------
+        if (string.IsNullOrWhiteSpace(request.Username))
+        {
+            return BadRequest(new
+            {
+                message = "Username is required."
+            });
+        }
+
+        // -------------------------
+        // Validate email
+        // -------------------------
+        if (string.IsNullOrWhiteSpace(request.Email))
+        {
+            return BadRequest(new
+            {
+                message = "Email is required."
+            });
+        }
+
+        // -------------------------
+        // Validate password
+        // -------------------------
+        if (string.IsNullOrWhiteSpace(request.Password))
+        {
+            return BadRequest(new
+            {
+                message = "Password is required."
+            });
+        }
+
+        // -------------------------
+        // Validate role
+        // -------------------------
+        if (string.IsNullOrWhiteSpace(request.Role))
+        {
+            return BadRequest(new
+            {
+                message = "Role is required."
+            });
+        }
+
+        var username = request.Username.Trim();
+        var email = request.Email.Trim().ToLowerInvariant();
+        var requestedRole = request.Role.Trim();
+
+        // -------------------------
+        // Username length
+        // -------------------------
+        if (username.Length < 3)
+        {
+            return BadRequest(new
+            {
+                message = "Username must contain at least 3 characters."
+            });
+        }
+
+        if (username.Length > 50)
+        {
+            return BadRequest(new
+            {
+                message = "Username cannot exceed 50 characters."
+            });
+        }
+
+        // -------------------------
+        // Basic email validation
+        // -------------------------
+        if (!email.Contains("@") || !email.Contains("."))
+        {
+            return BadRequest(new
+            {
+                message = "Please provide a valid email address."
+            });
+        }
+
+        // -------------------------
+        // Password validation
+        // -------------------------
+        if (request.Password.Length < 8)
+        {
+            return BadRequest(new
+            {
+                message = "Password must contain at least 8 characters."
+            });
+        }
+
+        // -------------------------
+        // Check duplicate username
+        // -------------------------
+        var usernameExists = await _context.Users
+            .AnyAsync(u =>
+                u.Username.ToLower() == username.ToLower());
+
+        if (usernameExists)
+        {
+            return BadRequest(new
+            {
+                message = "Username already exists."
+            });
+        }
+
+        // -------------------------
+        // Check duplicate email
+        // -------------------------
+        var emailExists = await _context.Users
+            .AnyAsync(u =>
+                u.Email.ToLower() == email);
+
+        if (emailExists)
+        {
+            return BadRequest(new
+            {
+                message = "Email already exists."
+            });
+        }
+
+        // -------------------------
+        // Find requested role
+        // -------------------------
+        var role = await _context.Roles
+            .FirstOrDefaultAsync(r =>
+                r.Name.ToLower() == requestedRole.ToLower());
+
+        if (role == null)
+        {
+            return BadRequest(new
+            {
+                message = "Invalid role."
+            });
+        }
+
+        // -------------------------
+        // Hash password
+        // -------------------------
+        var passwordHash = BCrypt.Net.BCrypt.HashPassword(
+            request.Password
+        );
+
+        // -------------------------
+        // Create user
+        // -------------------------
+        var user = new User
+        {
+            Username = username,
+            Email = email,
+            PasswordHash = passwordHash,
+            RoleId = role.Id,
+            IsActive = true
+        };
+
+        _context.Users.Add(user);
+
+        await _context.SaveChangesAsync();
+
+        // -------------------------
+        // Response
+        // -------------------------
+        return Ok(new
+        {
+            message = "User created successfully.",
+            userId = user.Id,
+            username = user.Username,
+            email = user.Email,
+            role = role.Name,
+            isActive = user.IsActive
+        });
+    }
+
+
+    // =========================================================
+    // PUT: api/Users/{id}/role
     // Change user role
     // =========================================================
     [HttpPut("{id:int}/role")]
@@ -93,7 +282,9 @@ public class UsersController : ControllerBase
 
         var requestedRole = request.Role.Trim();
 
+        // -------------------------
         // Find user
+        // -------------------------
         var user = await _context.Users
             .Include(u => u.Role)
             .FirstOrDefaultAsync(u => u.Id == id);
@@ -106,7 +297,9 @@ public class UsersController : ControllerBase
             });
         }
 
+        // -------------------------
         // Find role
+        // -------------------------
         var role = await _context.Roles
             .FirstOrDefaultAsync(r =>
                 r.Name.ToLower() == requestedRole.ToLower());
@@ -119,7 +312,9 @@ public class UsersController : ControllerBase
             });
         }
 
-        // Prevent unnecessary update
+        // -------------------------
+        // Check current role
+        // -------------------------
         if (user.RoleId == role.Id)
         {
             return BadRequest(new
@@ -128,6 +323,9 @@ public class UsersController : ControllerBase
             });
         }
 
+        // -------------------------
+        // Update role
+        // -------------------------
         user.RoleId = role.Id;
 
         await _context.SaveChangesAsync();
@@ -143,8 +341,8 @@ public class UsersController : ControllerBase
 
 
     // =========================================================
-    // PUT: api/users/{id}/activate
-    // Activate or deactivate user
+    // PUT: api/Users/{id}/activate
+    // Activate / deactivate user
     // =========================================================
     [HttpPut("{id:int}/activate")]
     public async Task<IActionResult> ChangeStatus(
@@ -159,6 +357,9 @@ public class UsersController : ControllerBase
             });
         }
 
+        // -------------------------
+        // Find user
+        // -------------------------
         var user = await _context.Users
             .Include(u => u.Role)
             .FirstOrDefaultAsync(u => u.Id == id);
@@ -171,12 +372,16 @@ public class UsersController : ControllerBase
             });
         }
 
-        // Prevent an Admin from accidentally disabling
-        // the currently logged-in Admin account.
+        // -------------------------
+        // Get current logged-in user
+        // -------------------------
         var currentUserId = User.FindFirst(
             System.Security.Claims.ClaimTypes.NameIdentifier
         )?.Value;
 
+        // -------------------------
+        // Prevent self-deactivation
+        // -------------------------
         if (currentUserId == user.Id.ToString() &&
             request.IsActive == false)
         {
@@ -186,6 +391,9 @@ public class UsersController : ControllerBase
             });
         }
 
+        // -------------------------
+        // Update status
+        // -------------------------
         user.IsActive = request.IsActive;
 
         await _context.SaveChangesAsync();
@@ -204,12 +412,15 @@ public class UsersController : ControllerBase
 
 
     // =========================================================
-    // DELETE: api/users/{id}
+    // DELETE: api/Users/{id}
     // Delete user
     // =========================================================
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteUser(int id)
     {
+        // -------------------------
+        // Find user
+        // -------------------------
         var user = await _context.Users
             .Include(u => u.Role)
             .FirstOrDefaultAsync(u => u.Id == id);
@@ -222,12 +433,16 @@ public class UsersController : ControllerBase
             });
         }
 
-        // Get currently logged-in user ID
+        // -------------------------
+        // Get current logged-in user
+        // -------------------------
         var currentUserId = User.FindFirst(
             System.Security.Claims.ClaimTypes.NameIdentifier
         )?.Value;
 
+        // -------------------------
         // Prevent deleting yourself
+        // -------------------------
         if (currentUserId == user.Id.ToString())
         {
             return BadRequest(new
@@ -236,6 +451,9 @@ public class UsersController : ControllerBase
             });
         }
 
+        // -------------------------
+        // Delete user
+        // -------------------------
         _context.Users.Remove(user);
 
         await _context.SaveChangesAsync();
@@ -251,8 +469,20 @@ public class UsersController : ControllerBase
 
 
 // =============================================================
-// Request Models
+// REQUEST MODELS
 // =============================================================
+
+public class CreateUserRequest
+{
+    public string Username { get; set; } = string.Empty;
+
+    public string Email { get; set; } = string.Empty;
+
+    public string Password { get; set; } = string.Empty;
+
+    public string Role { get; set; } = "Employee";
+}
+
 
 public class ChangeRoleRequest
 {

@@ -98,6 +98,26 @@ public class EmployeeController : ControllerBase
         return Ok(employees);
     }
 
+    // GET: api/Employee/available-users
+    [Authorize(Roles = "Admin,HR")]
+    [HttpGet("available-users")]
+    public async Task<IActionResult> GetAvailableUsers()
+    {
+        var users = await _context.Users
+            .AsNoTracking()
+            .Where(user => user.IsActive && user.Employee == null)
+            .OrderBy(user => user.Username)
+            .Select(user => new AvailableEmployeeUserDto
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email
+            })
+            .ToListAsync();
+
+        return Ok(users);
+    }
+
     // GET: api/Employee/1
     [Authorize(Roles = "Admin,HR,Manager")]
     [HttpGet("{id}")]
@@ -280,4 +300,13 @@ public class EmployeeController : ControllerBase
             message = "Employee deleted successfully."
         });
     }
+}
+
+public sealed class AvailableEmployeeUserDto
+{
+    public int Id { get; set; }
+
+    public string Username { get; set; } = string.Empty;
+
+    public string Email { get; set; } = string.Empty;
 }

@@ -46,9 +46,16 @@ interface Department {
   name: string;
 }
 
+interface AvailableUser {
+  id: number;
+  username: string;
+  email: string;
+}
+
 const Employees = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<AvailableUser[]>([]);
 
   const [search, setSearch] = useState("");
 
@@ -98,9 +105,20 @@ const Employees = () => {
     }
   };
 
+  const loadAvailableUsers = async () => {
+    try {
+      const response = await api.get<AvailableUser[]>("/Employee/available-users");
+      setAvailableUsers(response.data);
+    } catch (error) {
+      console.error("Available users loading error:", error);
+      setError("Failed to load available user accounts.");
+    }
+  };
+
   useEffect(() => {
     loadEmployees();
     loadDepartments();
+    loadAvailableUsers();
   }, []);
 
   const handleInputChange = (
@@ -180,6 +198,11 @@ const Employees = () => {
 
         setSuccess("Employee updated successfully.");
       } else {
+        if (!form.userId) {
+          setError("Please select a user account for this employee.");
+          return;
+        }
+
         await api.post("/Employee", data);
 
         setSuccess("Employee added successfully.");
@@ -489,6 +512,31 @@ const Employees = () => {
             spacing={2}
             sx={{ mt: 0.5 }}
           >
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                select
+                label="User Account"
+                name="userId"
+                value={form.userId}
+                onChange={handleInputChange}
+                required
+                disabled={editMode}
+                helperText={editMode
+                  ? "The linked user account cannot be changed."
+                  : availableUsers.length > 0
+                    ? "Select an active user account."
+                    : "No unassigned active accounts found. Register a user account first."}
+              >
+                <MenuItem value="">Select User</MenuItem>
+                {availableUsers.map((user) => (
+                  <MenuItem key={user.id} value={user.id}>
+                    {user.username} ({user.email})
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+
             <Grid size={{ xs: 12, sm: 6 }}>
   <TextField
     fullWidth

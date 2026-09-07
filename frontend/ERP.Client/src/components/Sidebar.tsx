@@ -82,6 +82,12 @@ const Sidebar = () => {
       roles: ["Admin", "HR", "Manager"],
     },
     {
+      name: "Payroll Reports",
+      path: "/payroll-reports",
+      icon: <Assessment />,
+      roles: ["Admin", "HR", "Manager"],
+    },
+    {
       name: "My Profile",
       path: "/profile",
       icon: <AccountCircle />,
@@ -177,12 +183,27 @@ const Sidebar = () => {
 
       {/* Menu */}
       <List
-        sx={{
-          px: 1.5,
-          py: 2,
-          flex: 1,
-        }}
-      >
+  sx={{
+    px: 1.5,
+    py: 2,
+    flex: 1,
+    overflowY: "auto",
+    overflowX: "hidden",
+
+    "&::-webkit-scrollbar": {
+      width: 6,
+    },
+
+    "&::-webkit-scrollbar-thumb": {
+      backgroundColor: "#374151",
+      borderRadius: 3,
+    },
+
+    "&::-webkit-scrollbar-track": {
+      backgroundColor: "transparent",
+    },
+  }}
+>
         {filteredMenuItems.map((item) => {
           const active = location.pathname === item.path;
 

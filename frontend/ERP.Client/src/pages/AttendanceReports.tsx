@@ -90,7 +90,7 @@ const AttendanceReports = () => {
       const response = await api.get("/Employee");
 
       setEmployees(response.data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Employee loading error:", error);
       setError(getErrorMessage(error, "Failed to load employees."));
     }
