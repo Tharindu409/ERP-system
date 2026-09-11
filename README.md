@@ -60,4 +60,3 @@ View summary reports across employees, departments, attendance, leave, and payro
 ## Notes
 
 - Add API endpoint documentation as the project evolves.
-- Screenshots and deployment instructions can also be added here.
