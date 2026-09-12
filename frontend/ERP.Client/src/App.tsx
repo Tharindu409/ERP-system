@@ -17,6 +17,7 @@ import Profile from "./pages/Profile";
 import Reports from "./pages/Reports";
 import AttendanceReports from "./pages/AttendanceReports";
 import EmployeeAttendanceSummary from "./pages/EmployeeAttendanceSummary";
+import HRReports from "./pages/HRReports";
 
 function App() {
   return (
@@ -279,8 +280,19 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/hr-reports"
+          element={
+            <ProtectedRoute allowedRoles={["Admin", "HR", "Manager"]}>
+              <MainLayout>
+                <HRReports />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
 
       </Routes>
+
     </BrowserRouter>
   );
 }

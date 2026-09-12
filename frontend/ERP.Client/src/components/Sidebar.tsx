@@ -88,6 +88,12 @@ const Sidebar = () => {
       roles: ["Admin", "HR", "Manager"],
     },
     {
+     name: "HR Reports",
+     path: "/hr-reports",
+     icon: <Assessment />,
+     roles: ["Admin", "HR", "Manager"],
+    },
+    {
       name: "My Profile",
       path: "/profile",
       icon: <AccountCircle />,
