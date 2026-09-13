@@ -14,7 +14,7 @@ public class AuditLog
 
     public string? EntityId { get; set; }
 
-    public string Details { get; set; } = string.Empty;
+    public string Details { get; set; } = "{}";
 
-    public DateTime OccurredAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

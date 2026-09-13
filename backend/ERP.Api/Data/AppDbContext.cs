@@ -81,12 +81,6 @@ public class AppDbContext : DbContext
         })
         .IsUnique();
 
-        modelBuilder.Entity<AuditLog>()
-            .HasIndex(log => log.OccurredAtUtc);
-
-        modelBuilder.Entity<AuditLog>()
-            .HasIndex(log => new { log.EntityType, log.EntityId });
-
 
     }
 

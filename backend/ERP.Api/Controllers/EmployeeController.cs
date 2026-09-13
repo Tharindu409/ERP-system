@@ -1,7 +1,6 @@
 using ERP.Api.Data;
 using ERP.Api.DTOs;
 using ERP.Api.Models;
-using ERP.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,12 +14,10 @@ namespace ERP.Api.Controllers;
 public class EmployeeController : ControllerBase
 {
     private readonly AppDbContext _context;
-    private readonly AuditLogService _auditLog;
 
-    public EmployeeController(AppDbContext context, AuditLogService auditLog)
+    public EmployeeController(AppDbContext context)
     {
         _context = context;
-        _auditLog = auditLog;
     }
 
     // GET: api/Employee/me
@@ -197,8 +194,6 @@ public class EmployeeController : ControllerBase
         _context.Employees.Add(employee);
 
         await _context.SaveChangesAsync();
-        await _auditLog.LogAsync("Created", "Employee", employee.Id,
-            $"Created employee {employee.FirstName} {employee.LastName}.");
 
         return CreatedAtAction(
             nameof(GetEmployee),
@@ -250,7 +245,6 @@ public class EmployeeController : ControllerBase
             });
         }
 
-        var previousStatus = employee.IsActive ? "Active" : "Inactive";
         employee.FirstName = updatedEmployee.FirstName;
         employee.LastName = updatedEmployee.LastName;
         employee.Phone = updatedEmployee.Phone;
@@ -265,8 +259,6 @@ public class EmployeeController : ControllerBase
         }
 
         await _context.SaveChangesAsync();
-        await _auditLog.LogAsync("Updated", "Employee", employee.Id,
-            $"Updated employee {employee.FirstName} {employee.LastName}. Status: {previousStatus} -> {(employee.IsActive ? "Active" : "Inactive")}.");
 
         return Ok(new
         {
@@ -307,8 +299,6 @@ public class EmployeeController : ControllerBase
         _context.Employees.Remove(employee);
 
         await _context.SaveChangesAsync();
-        await _auditLog.LogAsync("Deleted", "Employee", employee.Id,
-            $"Deleted employee {employee.FirstName} {employee.LastName}.");
 
         return Ok(new
         {

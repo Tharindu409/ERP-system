@@ -5,6 +5,7 @@
             using ERP.Api.Data;
             using Microsoft.EntityFrameworkCore;
             using Microsoft.OpenApi.Models;
+            using ERP.Api.Services;
 
             var builder = WebApplication.CreateBuilder(args);
 
@@ -37,7 +38,7 @@
                 ));
 
             builder.Services.AddHttpContextAccessor();
-            builder.Services.AddScoped<ERP.Api.Services.AuditLogService>();
+            builder.Services.AddScoped<AuditService>();
 
             builder.Services.AddAuthentication(
                 JwtBearerDefaults.AuthenticationScheme

@@ -8,11 +8,11 @@ namespace ERP.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = "Admin")]
-public class AuditLogsController : ControllerBase
+public class AuditController : ControllerBase
 {
     private readonly AppDbContext _context;
 
-    public AuditLogsController(AppDbContext context)
+    public AuditController(AppDbContext context)
     {
         _context = context;
     }
@@ -37,7 +37,7 @@ public class AuditLogsController : ControllerBase
         }
 
         var logs = await query
-            .OrderByDescending(log => log.OccurredAtUtc)
+            .OrderByDescending(log => log.CreatedAt)
             .Take(limit)
             .Select(log => new
             {
@@ -45,10 +45,10 @@ public class AuditLogsController : ControllerBase
                 actorUserId = log.ActorUserId,
                 actorUsername = log.ActorUsername,
                 log.Action,
-                log.EntityType,
-                log.EntityId,
-                log.Details,
-                occurredAtUtc = log.OccurredAtUtc
+                entityType = log.EntityType,
+                entityId = log.EntityId,
+                details = log.Details,
+                createdAt = log.CreatedAt
             })
             .ToListAsync();
 
