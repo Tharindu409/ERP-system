@@ -7,6 +7,7 @@ import Departments from "./pages/Departments";
 import Attendance from "./pages/Attendance";
 import Leave from "./pages/Leave";
 import LeaveBalance from "./pages/LeaveBalance";
+import LeaveCalendar from "./pages/LeaveCalendar";
 import Payroll from "./pages/Payroll";
 import PayrollReports from "./pages/PayrollReports";
 import Users from "./pages/Users";
@@ -148,6 +149,19 @@ function App() {
             >
               <MainLayout>
                 <LeaveBalance />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/leave-calendar"
+          element={
+            <ProtectedRoute
+              allowedRoles={["Admin", "HR", "Manager", "Employee"]}
+            >
+              <MainLayout>
+                <LeaveCalendar />
               </MainLayout>
             </ProtectedRoute>
           }

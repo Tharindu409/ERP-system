@@ -36,6 +36,9 @@
                     builder.Configuration.GetConnectionString("DefaultConnection")
                 ));
 
+            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddScoped<ERP.Api.Services.AuditLogService>();
+
             builder.Services.AddAuthentication(
                 JwtBearerDefaults.AuthenticationScheme
             )

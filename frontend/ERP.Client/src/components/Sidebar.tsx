@@ -9,6 +9,7 @@ import {
   AccountCircle,
   BarChart,
   EventAvailable,
+  CalendarMonth,
   Assessment,
   Logout,
 } from "@mui/icons-material";
@@ -78,6 +79,12 @@ const Sidebar = ({ mobileOpen, onClose }: SidebarProps) => {
       name: "Leave Balance",
       path: "/leave-balance",
       icon: <EventAvailable />,
+      roles: ["Admin", "HR", "Manager", "Employee"],
+    },
+    {
+      name: "Leave Calendar",
+      path: "/leave-calendar",
+      icon: <CalendarMonth />,
       roles: ["Admin", "HR", "Manager", "Employee"],
     },
     {

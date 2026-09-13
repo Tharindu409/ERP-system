@@ -1,5 +1,6 @@
 using ERP.Api.Data;
 using ERP.Api.Models;
+using ERP.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,10 +13,12 @@ namespace ERP.Api.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly AuditLogService _auditLog;
 
-    public UsersController(AppDbContext context)
+    public UsersController(AppDbContext context, AuditLogService auditLog)
     {
         _context = context;
+        _auditLog = auditLog;
     }
 
     // =========================================================
@@ -246,6 +249,8 @@ public class UsersController : ControllerBase
         _context.Users.Add(user);
 
         await _context.SaveChangesAsync();
+        await _auditLog.LogAsync("Created", "User", user.Id,
+            $"Created user {user.Username} with role {role.Name}.");
 
         // -------------------------
         // Response
@@ -327,9 +332,12 @@ public class UsersController : ControllerBase
         // -------------------------
         // Update role
         // -------------------------
+        var previousRole = user.Role?.Name ?? "Unknown";
         user.RoleId = role.Id;
 
         await _context.SaveChangesAsync();
+        await _auditLog.LogAsync("Updated", "User", user.Id,
+            $"Changed role for {user.Username}: {previousRole} -> {role.Name}.");
 
         return Ok(new
         {
@@ -396,6 +404,7 @@ public class UsersController : ControllerBase
         // -------------------------
         // Update status
         // -------------------------
+        var previousStatus = user.IsActive ? "Active" : "Inactive";
         user.IsActive = request.IsActive;
         if (user.Employee != null)
         {
@@ -403,6 +412,8 @@ public class UsersController : ControllerBase
         }
 
         await _context.SaveChangesAsync();
+        await _auditLog.LogAsync("Updated", "User", user.Id,
+            $"Changed status for {user.Username}: {previousStatus} -> {(user.IsActive ? "Active" : "Inactive")}.");
 
         return Ok(new
         {
@@ -463,6 +474,8 @@ public class UsersController : ControllerBase
         _context.Users.Remove(user);
 
         await _context.SaveChangesAsync();
+        await _auditLog.LogAsync("Deleted", "User", user.Id,
+            $"Deleted user {user.Username}.");
 
         return Ok(new
         {

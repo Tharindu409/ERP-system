@@ -18,6 +18,7 @@ public class AppDbContext : DbContext
     public DbSet<Attendance> Attendances => Set<Attendance>();
     public DbSet<LeaveRequest> LeaveRequests => Set<LeaveRequest>();
     public DbSet<Payroll> Payrolls => Set<Payroll>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -79,6 +80,12 @@ public class AppDbContext : DbContext
             payroll.Month
         })
         .IsUnique();
+
+        modelBuilder.Entity<AuditLog>()
+            .HasIndex(log => log.OccurredAtUtc);
+
+        modelBuilder.Entity<AuditLog>()
+            .HasIndex(log => new { log.EntityType, log.EntityId });
 
 
     }
