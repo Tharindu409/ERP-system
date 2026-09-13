@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:5193/api",
+ baseURL: "https://erp-api-3n7v.onrender.com/api",
   headers: {
     "Content-Type": "application/json",
   },

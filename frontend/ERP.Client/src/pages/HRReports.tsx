@@ -24,7 +24,6 @@ import PeopleIcon from "@mui/icons-material/People";
 import PersonIcon from "@mui/icons-material/Person";
 import BusinessIcon from "@mui/icons-material/Business";
 import EventAvailableIcon from "@mui/icons-material/EventAvailable";
-import EventBusyIcon from "@mui/icons-material/EventBusy";
 import BeachAccessIcon from "@mui/icons-material/BeachAccess";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -195,14 +194,9 @@ export default function HRReports() {
   );
 
   const totalAllowances = useMemo(
-    () => payroll.reduce((sum, item) => sum + item.totalAllowances, 0),
-    [payroll]
-  );
-
-  const totalDeductions = useMemo(
-    () => payroll.reduce((sum, item) => sum + item.totalDeductions, 0),
-    [payroll]
-  );
+  () => payroll.reduce((sum, item) => sum + item.totalAllowances, 0),
+  [payroll]
+);
 
   const totalNetSalary = useMemo(
     () => payroll.reduce((sum, item) => sum + item.totalNetSalary, 0),
@@ -219,8 +213,9 @@ export default function HRReports() {
           justifyContent: "center",
         }}
       >
-        <Stack spacing={2} alignItems="center">
+        <Stack spacing={2} sx={{ alignItems: "center" }}>
           <CircularProgress />
+
           <Typography color="text.secondary">
             Loading HR reports...
           </Typography>
@@ -234,13 +229,15 @@ export default function HRReports() {
       {/* Header */}
       <Stack
         direction={{ xs: "column", sm: "row" }}
-        justifyContent="space-between"
-        alignItems={{ xs: "flex-start", sm: "center" }}
         spacing={2}
-        sx={{ mb: 3 }}
+        sx={{
+          mb: 3,
+          justifyContent: "space-between",
+          alignItems: { xs: "flex-start", sm: "center" },
+        }}
       >
         <Box>
-          <Typography variant="h4" fontWeight={700}>
+          <Typography variant="h4" sx={{ fontWeight: 700 }}>
             HR Reports
           </Typography>
 
@@ -269,7 +266,11 @@ export default function HRReports() {
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
-              <Stack direction="row" spacing={2} alignItems="center">
+              <Stack
+                direction="row"
+                spacing={2}
+                sx={{ alignItems: "center" }}
+              >
                 <PeopleIcon fontSize="large" color="primary" />
 
                 <Box>
@@ -277,7 +278,7 @@ export default function HRReports() {
                     Total Employees
                   </Typography>
 
-                  <Typography variant="h4" fontWeight={700}>
+                  <Typography variant="h4" sx={{ fontWeight: 700 }}>
                     {employees.length}
                   </Typography>
                 </Box>
@@ -289,7 +290,11 @@ export default function HRReports() {
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
-              <Stack direction="row" spacing={2} alignItems="center">
+              <Stack
+                direction="row"
+                spacing={2}
+                sx={{ alignItems: "center" }}
+              >
                 <PersonIcon fontSize="large" color="success" />
 
                 <Box>
@@ -297,7 +302,7 @@ export default function HRReports() {
                     Active Employees
                   </Typography>
 
-                  <Typography variant="h4" fontWeight={700}>
+                  <Typography variant="h4" sx={{ fontWeight: 700 }}>
                     {activeEmployees}
                   </Typography>
                 </Box>
@@ -309,7 +314,11 @@ export default function HRReports() {
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
-              <Stack direction="row" spacing={2} alignItems="center">
+              <Stack
+                direction="row"
+                spacing={2}
+                sx={{ alignItems: "center" }}
+              >
                 <BusinessIcon fontSize="large" color="info" />
 
                 <Box>
@@ -317,7 +326,7 @@ export default function HRReports() {
                     Departments
                   </Typography>
 
-                  <Typography variant="h4" fontWeight={700}>
+                  <Typography variant="h4" sx={{ fontWeight: 700 }}>
                     {totalDepartments}
                   </Typography>
                 </Box>
@@ -329,7 +338,11 @@ export default function HRReports() {
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
-              <Stack direction="row" spacing={2} alignItems="center">
+              <Stack
+                direction="row"
+                spacing={2}
+                sx={{ alignItems: "center" }}
+              >
                 <BeachAccessIcon fontSize="large" color="warning" />
 
                 <Box>
@@ -337,7 +350,7 @@ export default function HRReports() {
                     Leave Requests
                   </Typography>
 
-                  <Typography variant="h4" fontWeight={700}>
+                  <Typography variant="h4" sx={{ fontWeight: 700 }}>
                     {totalLeaveRequests}
                   </Typography>
                 </Box>
@@ -350,7 +363,11 @@ export default function HRReports() {
       {/* EMPLOYEE OVERVIEW */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Typography variant="h6" fontWeight={700} gutterBottom>
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 700 }}
+            gutterBottom
+          >
             Employee Overview
           </Typography>
 
@@ -361,11 +378,18 @@ export default function HRReports() {
               <Stack spacing={2}>
                 <Stack
                   direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
+                  sx={{
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
                 >
-                  <Stack direction="row" spacing={1} alignItems="center">
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{ alignItems: "center" }}
+                  >
                     <PersonIcon color="success" />
+
                     <Typography>Active Employees</Typography>
                   </Stack>
 
@@ -378,11 +402,18 @@ export default function HRReports() {
 
                 <Stack
                   direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
+                  sx={{
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
                 >
-                  <Stack direction="row" spacing={1} alignItems="center">
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{ alignItems: "center" }}
+                  >
                     <PersonIcon color="error" />
+
                     <Typography>Inactive Employees</Typography>
                   </Stack>
 
@@ -395,11 +426,18 @@ export default function HRReports() {
 
                 <Stack
                   direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
+                  sx={{
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
                 >
-                  <Stack direction="row" spacing={1} alignItems="center">
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    sx={{ alignItems: "center" }}
+                  >
                     <BusinessIcon color="primary" />
+
                     <Typography>Total Departments</Typography>
                   </Stack>
 
@@ -413,7 +451,7 @@ export default function HRReports() {
             </Grid>
 
             <Grid size={{ xs: 12, md: 6 }}>
-              <Typography fontWeight={600} sx={{ mb: 1 }}>
+              <Typography sx={{ fontWeight: 600, mb: 1 }}>
                 Employee Distribution by Department
               </Typography>
 
@@ -427,12 +465,15 @@ export default function HRReports() {
                     <Box key={department.id}>
                       <Stack
                         direction="row"
-                        justifyContent="space-between"
-                        sx={{ mb: 0.5 }}
+                        sx={{
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          mb: 0.5,
+                        }}
                       >
                         <Typography>{department.name}</Typography>
 
-                        <Typography fontWeight={600}>
+                        <Typography sx={{ fontWeight: 600 }}>
                           {department.employeeCount}
                         </Typography>
                       </Stack>
@@ -477,11 +518,13 @@ export default function HRReports() {
             <CardContent>
               <Stack
                 direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                sx={{ mb: 2 }}
+                sx={{
+                  mb: 2,
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
               >
-                <Typography variant="h6" fontWeight={700}>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
                   Attendance Overview
                 </Typography>
 
@@ -493,17 +536,22 @@ export default function HRReports() {
               <Stack spacing={2}>
                 <Stack
                   direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
+                  sx={{
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
                 >
                   <Typography>Total Records</Typography>
+
                   <Chip label={totalAttendanceRecords} />
                 </Stack>
 
                 <Stack
                   direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
+                  sx={{
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
                 >
                   <Typography>Present</Typography>
 
@@ -518,8 +566,10 @@ export default function HRReports() {
                   <Stack
                     key={item.status}
                     direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
+                    sx={{
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
                   >
                     <Typography>{item.status}</Typography>
 
@@ -535,14 +585,16 @@ export default function HRReports() {
 
                 <Stack
                   direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
+                  sx={{
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
                 >
-                  <Typography fontWeight={700}>
+                  <Typography sx={{ fontWeight: 700 }}>
                     Attendance Rate
                   </Typography>
 
-                  <Typography variant="h6" fontWeight={700}>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
                     {attendanceRate.toFixed(1)}%
                   </Typography>
                 </Stack>
@@ -556,11 +608,13 @@ export default function HRReports() {
             <CardContent>
               <Stack
                 direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-                sx={{ mb: 2 }}
+                sx={{
+                  mb: 2,
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
               >
-                <Typography variant="h6" fontWeight={700}>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
                   Leave Overview
                 </Typography>
 
@@ -572,8 +626,10 @@ export default function HRReports() {
               <Stack spacing={2}>
                 <Stack
                   direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
+                  sx={{
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
                 >
                   <Typography>Total Requests</Typography>
 
@@ -584,8 +640,10 @@ export default function HRReports() {
                   <Stack
                     key={item.status}
                     direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
+                    sx={{
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
                   >
                     <Typography>{item.status}</Typography>
 
@@ -613,11 +671,13 @@ export default function HRReports() {
         <CardContent>
           <Stack
             direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-            sx={{ mb: 2 }}
+            sx={{
+              mb: 2,
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
           >
-            <Typography variant="h6" fontWeight={700}>
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
               Payroll Overview
             </Typography>
 
@@ -633,7 +693,7 @@ export default function HRReports() {
                   Payroll Records
                 </Typography>
 
-                <Typography variant="h6" fontWeight={700}>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
                   {totalPayrollRecords}
                 </Typography>
               </Box>
@@ -645,7 +705,7 @@ export default function HRReports() {
                   Basic Salary
                 </Typography>
 
-                <Typography variant="h6" fontWeight={700}>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
                   {formatCurrency(totalBasicSalary)}
                 </Typography>
               </Box>
@@ -657,7 +717,7 @@ export default function HRReports() {
                   Allowances
                 </Typography>
 
-                <Typography variant="h6" fontWeight={700}>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
                   {formatCurrency(totalAllowances)}
                 </Typography>
               </Box>
@@ -669,14 +729,14 @@ export default function HRReports() {
                   Net Salary
                 </Typography>
 
-                <Typography variant="h6" fontWeight={700}>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
                   {formatCurrency(totalNetSalary)}
                 </Typography>
               </Box>
             </Grid>
           </Grid>
 
-          <Typography fontWeight={600} sx={{ mb: 1.5 }}>
+          <Typography sx={{ fontWeight: 600, mb: 1.5 }}>
             Recent Monthly Payroll
           </Typography>
 
@@ -715,7 +775,7 @@ export default function HRReports() {
                     </TableCell>
 
                     <TableCell>
-                      <Typography fontWeight={700}>
+                      <Typography sx={{ fontWeight: 700 }}>
                         {formatCurrency(item.totalNetSalary)}
                       </Typography>
                     </TableCell>
@@ -738,7 +798,10 @@ export default function HRReports() {
       {/* DEPARTMENT TABLE */}
       <Card>
         <CardContent>
-          <Typography variant="h6" fontWeight={700} sx={{ mb: 2 }}>
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 700, mb: 2 }}
+          >
             Department Overview
           </Typography>
 
@@ -757,7 +820,7 @@ export default function HRReports() {
                 {departments.map((department) => (
                   <TableRow key={department.id}>
                     <TableCell>
-                      <Typography fontWeight={600}>
+                      <Typography sx={{ fontWeight: 600 }}>
                         {department.name}
                       </Typography>
                     </TableCell>
