@@ -1,3 +1,4 @@
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
@@ -169,17 +170,6 @@ var app = builder.Build();
 // =====================================================
 // CREATE INITIAL ADMIN USER
 // =====================================================
-// This runs when the application starts.
-//
-// It creates an Admin only when:
-// 1. Admin role exists
-// 2. No Admin user currently exists
-// 3. ADMIN_USERNAME is configured
-// 4. ADMIN_EMAIL is configured
-// 5. ADMIN_PASSWORD is configured
-//
-// Password is securely hashed using BCrypt.
-// =====================================================
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider
@@ -281,7 +271,6 @@ using (var scope = app.Services.CreateScope())
 
 // =====================================================
 // SWAGGER
-// Enabled for deployment/testing
 // =====================================================
 app.UseSwagger();
 
@@ -290,15 +279,18 @@ app.UseSwaggerUI();
 // =====================================================
 // HTTPS
 // =====================================================
-// Render handles HTTPS at the platform level.
-// Therefore HTTPS redirection is disabled here.
-//
+// Render handles HTTPS.
+// HTTPS redirection is disabled.
+
 // app.UseHttpsRedirection();
 
 // =====================================================
 // CORS
 // =====================================================
-app.UseCors("ReactApp");
+// IMPORTANT:
+// The policy name must match the name used in AddCors()
+// =====================================================
+app.UseCors("AllowFrontend");
 
 // =====================================================
 // AUTHENTICATION
@@ -317,9 +309,6 @@ app.MapControllers();
 
 // =====================================================
 // RENDER PORT
-// =====================================================
-// Render provides the PORT environment variable.
-// If PORT is not available locally, use 10000.
 // =====================================================
 var port =
     Environment.GetEnvironmentVariable("PORT")
