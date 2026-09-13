@@ -12,6 +12,20 @@ body,
 }
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
-  background-color: #f5f7fb;
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  color: #172b32;
+  background: #f3f7f8;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+::selection {
+  color: #ffffff;
+  background: #155e75;
 }

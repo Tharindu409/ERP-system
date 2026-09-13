@@ -3,14 +3,20 @@ import {
   Avatar,
   Box,
   IconButton,
+  Tooltip,
   Toolbar,
   Typography,
 } from "@mui/material";
 
-import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
-
 import Sidebar from "./Sidebar";
 import { useAuth } from "../context/AuthContext";
+import MenuIcon from "@mui/icons-material/Menu";
+import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
+import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
+import NotificationsActiveOutlinedIcon from "@mui/icons-material/NotificationsActiveOutlined";
+import { Badge, Menu, MenuItem, Divider } from "@mui/material";
+import { useState } from "react";
+import { useThemeMode } from "../context/ThemeModeContext";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -18,21 +24,24 @@ interface MainLayoutProps {
 
 const MainLayout = ({ children }: MainLayoutProps) => {
   const { user } = useAuth();
+  const { mode, toggleMode } = useThemeMode();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [notificationAnchor, setNotificationAnchor] = useState<null | HTMLElement>(null);
 
   return (
     <Box
       sx={{
         display: "flex",
         minHeight: "100vh",
-        backgroundColor: "#f5f7fb",
+        backgroundColor: "background.default",
       }}
     >
-      <Sidebar />
+      <Sidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
 
       <Box
         sx={{
           flexGrow: 1,
-          marginLeft: "260px",
+          marginLeft: { xs: 0, md: "260px" },
         }}
       >
         {/* Top Navbar */}
@@ -40,11 +49,13 @@ const MainLayout = ({ children }: MainLayoutProps) => {
           position="fixed"
           elevation={0}
           sx={{
-            width: "calc(100% - 260px)",
-            marginLeft: "260px",
-            backgroundColor: "white",
-            color: "#111827",
-            borderBottom: "1px solid #e5e7eb",
+            width: { xs: "100%", md: "calc(100% - 260px)" },
+            marginLeft: { xs: 0, md: "260px" },
+            backgroundColor: "rgba(255,255,255,0.92)",
+            color: "text.primary",
+            borderBottom: "1px solid",
+            borderColor: "divider",
+            backdropFilter: "blur(12px)",
           }}
         >
           <Toolbar
@@ -53,12 +64,23 @@ const MainLayout = ({ children }: MainLayoutProps) => {
               justifyContent: "space-between",
             }}
           >
-            <Typography
-              variant="h6"
-              sx={{ fontWeight: 600 }}
-            >
-              Human Resource Management
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <IconButton
+                aria-label="Open navigation"
+                onClick={() => setMobileOpen(true)}
+                sx={{ display: { xs: "inline-flex", md: "none" } }}
+              >
+                <MenuIcon />
+              </IconButton>
+              <Box>
+              <Typography variant="overline" color="primary.main" sx={{ fontWeight: 700, letterSpacing: 1.4 }}>
+                Operations workspace
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.1 }}>
+                Human Resource Management
+              </Typography>
+              </Box>
+            </Box>
 
             <Box
               sx={{
@@ -67,9 +89,30 @@ const MainLayout = ({ children }: MainLayoutProps) => {
                 gap: 1,
               }}
             >
-              <IconButton>
-                <NotificationsNoneIcon />
-              </IconButton>
+              <Tooltip title="Notifications">
+                <IconButton onClick={(event) => setNotificationAnchor(event.currentTarget)}>
+                  <Badge color="secondary" variant="dot" invisible={false}>
+                    <NotificationsActiveOutlinedIcon />
+                  </Badge>
+                </IconButton>
+              </Tooltip>
+
+              <Tooltip title={mode === "light" ? "Use dark mode" : "Use light mode"}>
+                <IconButton onClick={toggleMode} aria-label="Toggle color mode">
+                  {mode === "light" ? <DarkModeOutlinedIcon /> : <LightModeOutlinedIcon />}
+                </IconButton>
+              </Tooltip>
+
+              <Menu
+                anchorEl={notificationAnchor}
+                open={Boolean(notificationAnchor)}
+                onClose={() => setNotificationAnchor(null)}
+                sx={{ mt: 1, "& .MuiPaper-root": { minWidth: 280 } }}
+              >
+                <MenuItem disabled sx={{ fontWeight: 700 }}>Notifications</MenuItem>
+                <Divider />
+                <MenuItem disabled>No new notifications</MenuItem>
+              </Menu>
 
               <Avatar
                 sx={{
@@ -104,8 +147,8 @@ const MainLayout = ({ children }: MainLayoutProps) => {
         <Box
           component="main"
           sx={{
-            p: 4,
-            pt: 12,
+            p: { xs: 2, sm: 3, lg: 4 },
+            pt: { xs: 11, md: 12 },
           }}
         >
           {children}

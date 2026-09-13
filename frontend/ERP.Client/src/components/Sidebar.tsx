@@ -26,7 +26,12 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-const Sidebar = () => {
+interface SidebarProps {
+  mobileOpen: boolean;
+  onClose: () => void;
+}
+
+const Sidebar = ({ mobileOpen, onClose }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -154,11 +159,12 @@ const Sidebar = () => {
         position: "fixed",
         left: 0,
         top: 0,
-        backgroundColor: "#111827",
+          background: "linear-gradient(180deg, #123b46 0%, #0b2730 100%)",
         color: "white",
-        display: "flex",
+        display: { xs: mobileOpen ? "flex" : "none", md: "flex" },
         flexDirection: "column",
         zIndex: 1200,
+        boxShadow: { xs: "12px 0 35px rgba(6, 28, 35, 0.22)", md: "none" },
       }}
     >
       {/* Logo */}
@@ -175,6 +181,7 @@ const Sidebar = () => {
           sx={{
             color: "white",
             fontWeight: "bold",
+            letterSpacing: "0.02em",
           }}
         >
           HR ERP
@@ -216,23 +223,27 @@ const Sidebar = () => {
           return (
             <ListItemButton
               key={item.path}
-              onClick={() => navigate(item.path)}
+              onClick={() => {
+                navigate(item.path);
+                onClose();
+              }}
               sx={{
                 borderRadius: 2,
                 mb: 0.5,
+                minHeight: 44,
 
                 color: active
                   ? "white"
                   : "#9ca3af",
 
                 backgroundColor: active
-                  ? "#2563eb"
+                  ? "#d97706"
                   : "transparent",
 
                 "&:hover": {
                   backgroundColor: active
-                    ? "#2563eb"
-                    : "#1f2937",
+                    ? "#d97706"
+                    : "rgba(255,255,255,0.08)",
 
                   color: "white",
                 },
@@ -258,7 +269,10 @@ const Sidebar = () => {
       {/* Logout */}
       <Box sx={{ p: 1.5 }}>
         <ListItemButton
-          onClick={handleLogout}
+          onClick={() => {
+            handleLogout();
+            onClose();
+          }}
           sx={{
             borderRadius: 2,
             color: "#fca5a5",

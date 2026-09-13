@@ -8,6 +8,7 @@ import {
   TextField,
   Typography,
   Alert,
+  Divider,
 } from "@mui/material";
 
 import { useAuth } from "../context/AuthContext";
@@ -54,33 +55,43 @@ const Login = () => {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#f4f7fb",
+        p: { xs: 2, sm: 4 },
+        background: "linear-gradient(135deg, #eaf3f3 0%, #f8faf8 52%, #fff4e6 100%)",
       }}
     >
       <Card
         sx={{
-          width: 400,
-          maxWidth: "90%",
+          width: 430,
+          maxWidth: "100%",
           borderRadius: 3,
-          boxShadow: 4,
+          boxShadow: "0 24px 70px rgba(23, 43, 50, 0.16)",
         }}
       >
-        <CardContent sx={{ p: 4 }}>
+        <CardContent sx={{ p: { xs: 3, sm: 5 } }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 4 }}>
+            <Box sx={{ width: 12, height: 42, borderRadius: 1, bgcolor: "secondary.main" }} />
+            <Box>
+              <Typography variant="overline" color="primary.main" sx={{ fontWeight: 700, letterSpacing: 1.5 }}>
+                HR ERP
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                People operations, clearly organized
+              </Typography>
+            </Box>
+          </Box>
           <Typography
             variant="h4"
-            align="center"
-            sx={{ fontWeight: "bold" }}
+            sx={{ fontWeight: 700, color: "text.primary" }}
             gutterBottom
           >
-            HR ERP
+            Welcome back
           </Typography>
 
           <Typography
-            align="center"
             color="text.secondary"
-            sx={{ mb: 4 }}
+            sx={{ mb: 3 }}
           >
-            Sign in to your account
+            Sign in to access your workforce workspace.
           </Typography>
 
           {error && (
@@ -96,6 +107,7 @@ const Login = () => {
               value={username}
               onChange={(event) => setUsername(event.target.value)}
               margin="normal"
+              autoComplete="username"
               required
             />
 
@@ -106,6 +118,7 @@ const Login = () => {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               margin="normal"
+              autoComplete="current-password"
               required
             />
 
@@ -119,6 +132,10 @@ const Login = () => {
             >
               {loading ? "Signing in..." : "Login"}
             </Button>
+            <Divider sx={{ mt: 4, mb: 2 }} />
+            <Typography variant="caption" color="text.secondary">
+              Authorized access only. Contact your administrator if your account is inactive.
+            </Typography>
           </Box>
         </CardContent>
       </Card>

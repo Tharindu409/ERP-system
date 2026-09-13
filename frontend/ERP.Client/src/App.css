@@ -1,3 +1,8 @@
+#root {
+  min-height: 100vh;
+}
+
+/* Legacy Vite styles below are intentionally unused by the ERP shell. */
 .counter {
   font-size: 16px;
   padding: 5px 10px;
