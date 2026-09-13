@@ -223,7 +223,8 @@ public class EmployeeController : ControllerBase
         Employee updatedEmployee)
     {
         var employee = await _context.Employees
-            .FindAsync(id);
+            .Include(e => e.User)
+            .FirstOrDefaultAsync(e => e.Id == id);
 
         if (employee == null)
         {
@@ -252,6 +253,10 @@ public class EmployeeController : ControllerBase
         employee.Salary = updatedEmployee.Salary;
         employee.DepartmentId = updatedEmployee.DepartmentId;
         employee.IsActive = updatedEmployee.IsActive;
+        if (employee.User != null)
+        {
+            employee.User.IsActive = updatedEmployee.IsActive;
+        }
 
         await _context.SaveChangesAsync();
 

@@ -57,6 +57,34 @@
                     ClockSkew = TimeSpan.Zero,
                     RoleClaimType = ClaimTypes.Role
                 };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = async context =>
+                    {
+                        var userIdClaim = context.Principal?
+                            .FindFirstValue(ClaimTypes.NameIdentifier);
+
+                        if (!int.TryParse(userIdClaim, out var userId))
+                        {
+                            context.Fail("Invalid user information.");
+                            return;
+                        }
+
+                        var dbContext = context.HttpContext.RequestServices
+                            .GetRequiredService<AppDbContext>();
+                        var isActive = await dbContext.Users
+                            .AsNoTracking()
+                            .Where(user => user.Id == userId)
+                            .Select(user => (bool?)user.IsActive)
+                            .SingleOrDefaultAsync();
+
+                        if (isActive != true)
+                        {
+                            context.Fail("User account is inactive.");
+                        }
+                    }
+                };
             });
 
             builder.Services.AddAuthorization();

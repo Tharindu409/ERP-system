@@ -15,7 +15,6 @@ import {
   MenuItem,
   TextField,
   Typography,
-  
 } from "@mui/material";
 
 import {
@@ -78,11 +77,17 @@ const Employees = () => {
     hireDate: "",
     salary: "",
     departmentId: "",
+    isActive: true,
   });
+
+  // ==============================
+  // LOAD EMPLOYEES
+  // ==============================
 
   const loadEmployees = async () => {
     try {
       setLoading(true);
+      setError("");
 
       const response = await api.get("/Employee");
 
@@ -95,6 +100,10 @@ const Employees = () => {
     }
   };
 
+  // ==============================
+  // LOAD DEPARTMENTS
+  // ==============================
+
   const loadDepartments = async () => {
     try {
       const response = await api.get("/Department");
@@ -102,24 +111,40 @@ const Employees = () => {
       setDepartments(response.data);
     } catch (error) {
       console.error("Department loading error:", error);
+      setError("Failed to load departments.");
     }
   };
 
+  // ==============================
+  // LOAD AVAILABLE USERS
+  // ==============================
+
   const loadAvailableUsers = async () => {
     try {
-      const response = await api.get<AvailableUser[]>("/Employee/available-users");
+      const response = await api.get<AvailableUser[]>(
+        "/Employee/available-users"
+      );
+
       setAvailableUsers(response.data);
     } catch (error) {
       console.error("Available users loading error:", error);
-      setError("Failed to load available user accounts.");
+      setError("Failed to load user accounts.");
     }
   };
+
+  // ==============================
+  // INITIAL LOAD
+  // ==============================
 
   useEffect(() => {
     loadEmployees();
     loadDepartments();
     loadAvailableUsers();
   }, []);
+
+  // ==============================
+  // HANDLE INPUT CHANGE
+  // ==============================
 
   const handleInputChange = (
     event: React.ChangeEvent<HTMLInputElement>
@@ -132,6 +157,10 @@ const Employees = () => {
     }));
   };
 
+  // ==============================
+  // RESET FORM
+  // ==============================
+
   const resetForm = () => {
     setForm({
       userId: "",
@@ -142,17 +171,29 @@ const Employees = () => {
       hireDate: "",
       salary: "",
       departmentId: "",
+      isActive: true,
     });
   };
+
+  // ==============================
+  // ADD EMPLOYEE
+  // ==============================
 
   const handleAdd = () => {
     setEditMode(false);
     setSelectedEmployee(null);
+
     resetForm();
+
     setError("");
     setSuccess("");
+
     setOpenDialog(true);
   };
+
+  // ==============================
+  // EDIT EMPLOYEE
+  // ==============================
 
   const handleEdit = (employee: Employee) => {
     setEditMode(true);
@@ -167,17 +208,54 @@ const Employees = () => {
       hireDate: employee.hireDate,
       salary: employee.salary.toString(),
       departmentId: employee.departmentId.toString(),
+      isActive: employee.isActive,
     });
 
     setError("");
     setSuccess("");
+
     setOpenDialog(true);
   };
+
+  // ==============================
+  // SAVE EMPLOYEE
+  // ==============================
 
   const handleSave = async () => {
     try {
       setError("");
       setSuccess("");
+
+      // Validation
+      if (!form.firstName.trim()) {
+        setError("Please enter the first name.");
+        return;
+      }
+
+      if (!form.lastName.trim()) {
+        setError("Please enter the last name.");
+        return;
+      }
+
+      if (!form.hireDate) {
+        setError("Please select the hire date.");
+        return;
+      }
+
+      if (!form.salary) {
+        setError("Please enter the salary.");
+        return;
+      }
+
+      if (!form.departmentId) {
+        setError("Please select a department.");
+        return;
+      }
+
+      if (!editMode && !form.userId) {
+        setError("Please select a user account.");
+        return;
+      }
 
       const data = {
         userId: Number(form.userId),
@@ -188,7 +266,14 @@ const Employees = () => {
         hireDate: form.hireDate,
         salary: Number(form.salary),
         departmentId: Number(form.departmentId),
+        isActive: form.isActive,
       };
+
+      console.log("Employee data being sent:", data);
+
+      // ==============================
+      // UPDATE
+      // ==============================
 
       if (editMode && selectedEmployee) {
         await api.put(
@@ -197,21 +282,29 @@ const Employees = () => {
         );
 
         setSuccess("Employee updated successfully.");
-      } else {
-        if (!form.userId) {
-          setError("Please select a user account for this employee.");
-          return;
-        }
+      }
 
+      // ==============================
+      // CREATE
+      // ==============================
+
+      else {
         await api.post("/Employee", data);
 
         setSuccess("Employee added successfully.");
       }
 
+      // Close dialog
       setOpenDialog(false);
+
+      // Reset form
       resetForm();
 
+      // Reload employees from database
       await loadEmployees();
+
+      // Reload available users
+      await loadAvailableUsers();
     } catch (error: any) {
       console.error("Employee save error:", error);
 
@@ -221,6 +314,10 @@ const Employees = () => {
       );
     }
   };
+
+  // ==============================
+  // DELETE EMPLOYEE
+  // ==============================
 
   const handleDelete = async (id: number) => {
     const confirmed = window.confirm(
@@ -240,6 +337,7 @@ const Employees = () => {
       setSuccess("Employee deleted successfully.");
 
       await loadEmployees();
+      await loadAvailableUsers();
     } catch (error: any) {
       console.error("Employee delete error:", error);
 
@@ -250,21 +348,37 @@ const Employees = () => {
     }
   };
 
+  // ==============================
+  // SEARCH
+  // ==============================
+
   const filteredEmployees = employees.filter((employee) => {
     const fullName =
       `${employee.firstName} ${employee.lastName}`.toLowerCase();
 
+    const searchValue = search.toLowerCase();
+
     return (
-      fullName.includes(search.toLowerCase()) ||
+      fullName.includes(searchValue) ||
       employee.phone
         ?.toLowerCase()
-        .includes(search.toLowerCase())
+        .includes(searchValue) ||
+      employee.departmentName
+        ?.toLowerCase()
+        .includes(searchValue)
     );
   });
 
+  // ==============================
+  // UI
+  // ==============================
+
   return (
     <Box>
-      {/* Header */}
+      {/* =========================
+          PAGE HEADER
+      ========================== */}
+
       <Box
         sx={{
           display: "flex",
@@ -298,7 +412,10 @@ const Employees = () => {
         </Button>
       </Box>
 
-      {/* Alerts */}
+      {/* =========================
+          ERROR MESSAGE
+      ========================== */}
+
       {error && (
         <Alert
           severity="error"
@@ -308,6 +425,10 @@ const Employees = () => {
           {error}
         </Alert>
       )}
+
+      {/* =========================
+          SUCCESS MESSAGE
+      ========================== */}
 
       {success && (
         <Alert
@@ -319,7 +440,10 @@ const Employees = () => {
         </Alert>
       )}
 
-      {/* Search */}
+      {/* =========================
+          SEARCH
+      ========================== */}
+
       <Card
         elevation={0}
         sx={{
@@ -332,7 +456,7 @@ const Employees = () => {
           <TextField
             fullWidth
             label="Search employees"
-            placeholder="Search by name or phone..."
+            placeholder="Search by name, phone or department..."
             value={search}
             onChange={(event) =>
               setSearch(event.target.value)
@@ -341,7 +465,10 @@ const Employees = () => {
         </CardContent>
       </Card>
 
-      {/* Employee list */}
+      {/* =========================
+          EMPLOYEE LIST
+      ========================== */}
+
       {loading ? (
         <Typography>
           Loading employees...
@@ -399,10 +526,15 @@ const Employees = () => {
                 }}
               >
                 <CardContent>
+                  {/* =========================
+                      EMPLOYEE NAME + STATUS
+                  ========================== */}
+
                   <Box
                     sx={{
                       display: "flex",
                       justifyContent: "space-between",
+                      alignItems: "flex-start",
                     }}
                   >
                     <Box>
@@ -437,6 +569,10 @@ const Employees = () => {
                     />
                   </Box>
 
+                  {/* =========================
+                      EMPLOYEE DETAILS
+                  ========================== */}
+
                   <Box sx={{ mt: 3 }}>
                     <Typography variant="body2">
                       <strong>Phone:</strong>{" "}
@@ -458,7 +594,21 @@ const Employees = () => {
                       <strong>Salary:</strong>{" "}
                       {employee.salary.toLocaleString()}
                     </Typography>
+
+                    <Typography
+                      variant="body2"
+                      sx={{ mt: 1 }}
+                    >
+                      <strong>Status:</strong>{" "}
+                      {employee.isActive
+                        ? "Currently Active"
+                        : "Currently Inactive"}
+                    </Typography>
                   </Box>
+
+                  {/* =========================
+                      ACTION BUTTONS
+                  ========================== */}
 
                   <Box
                     sx={{
@@ -493,7 +643,10 @@ const Employees = () => {
         </Grid>
       )}
 
-      {/* Add/Edit Dialog */}
+      {/* =========================
+          ADD / EDIT DIALOG
+      ========================== */}
+
       <Dialog
         open={openDialog}
         onClose={() => setOpenDialog(false)}
@@ -512,6 +665,10 @@ const Employees = () => {
             spacing={2}
             sx={{ mt: 0.5 }}
           >
+            {/* =========================
+                USER ACCOUNT
+            ========================== */}
+
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
@@ -522,45 +679,95 @@ const Employees = () => {
                 onChange={handleInputChange}
                 required
                 disabled={editMode}
-                helperText={editMode
-                  ? "The linked user account cannot be changed."
-                  : availableUsers.length > 0
-                    ? "Select an active user account."
-                    : "No unassigned active accounts found. Register a user account first."}
+                helperText={
+                  editMode
+                    ? "The linked user account cannot be changed."
+                    : availableUsers.length > 0
+                      ? "Select an active user account."
+                      : "No unassigned active accounts found. Register a user account first."
+                }
               >
-                <MenuItem value="">Select User</MenuItem>
+                <MenuItem value="">
+                  Select User
+                </MenuItem>
+
                 {availableUsers.map((user) => (
-                  <MenuItem key={user.id} value={user.id}>
+                  <MenuItem
+                    key={user.id}
+                    value={user.id}
+                  >
                     {user.username} ({user.email})
                   </MenuItem>
                 ))}
               </TextField>
             </Grid>
 
-            <Grid size={{ xs: 12, sm: 6 }}>
-  <TextField
-    fullWidth
-    select
-    label="Department"
-    name="departmentId"
-    value={form.departmentId}
-    onChange={handleInputChange}
-    required
-  >
-    <MenuItem value="">
-      Select Department
-    </MenuItem>
+            {/* =========================
+                DEPARTMENT
+            ========================== */}
 
-    {departments.map((department) => (
-      <MenuItem
-        key={department.id}
-        value={department.id}
-      >
-        {department.name}
-      </MenuItem>
-    ))}
-  </TextField>
-</Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                select
+                label="Department"
+                name="departmentId"
+                value={form.departmentId}
+                onChange={handleInputChange}
+                required
+              >
+                <MenuItem value="">
+                  Select Department
+                </MenuItem>
+
+                {departments.map((department) => (
+                  <MenuItem
+                    key={department.id}
+                    value={department.id}
+                  >
+                    {department.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+
+            {/* =========================
+                EMPLOYMENT STATUS
+            ========================== */}
+
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                fullWidth
+                select
+                label="Employment Status"
+                name="isActive"
+                value={
+                  form.isActive
+                    ? "true"
+                    : "false"
+                }
+                onChange={(event) =>
+                  setForm((previous) => ({
+                    ...previous,
+                    isActive:
+                      event.target.value === "true",
+                  }))
+                }
+              >
+                <MenuItem value="true">
+                  Active
+                </MenuItem>
+
+                <MenuItem value="false">
+                  Inactive
+                </MenuItem>
+              </TextField>
+            </Grid>
+
+            {/* =========================
+                FIRST NAME
+            ========================== */}
+
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
@@ -571,6 +778,10 @@ const Employees = () => {
                 required
               />
             </Grid>
+
+            {/* =========================
+                LAST NAME
+            ========================== */}
 
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
@@ -583,6 +794,10 @@ const Employees = () => {
               />
             </Grid>
 
+            {/* =========================
+                PHONE
+            ========================== */}
+
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
@@ -592,6 +807,10 @@ const Employees = () => {
                 onChange={handleInputChange}
               />
             </Grid>
+
+            {/* =========================
+                HIRE DATE
+            ========================== */}
 
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
@@ -610,6 +829,10 @@ const Employees = () => {
               />
             </Grid>
 
+            {/* =========================
+                SALARY
+            ========================== */}
+
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
                 fullWidth
@@ -621,6 +844,10 @@ const Employees = () => {
                 required
               />
             </Grid>
+
+            {/* =========================
+                ADDRESS
+            ========================== */}
 
             <Grid size={{ xs: 12 }}>
               <TextField
@@ -636,7 +863,16 @@ const Employees = () => {
           </Grid>
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        {/* =========================
+            DIALOG BUTTONS
+        ========================== */}
+
+        <DialogActions
+          sx={{
+            px: 3,
+            pb: 2,
+          }}
+        >
           <Button
             onClick={() => setOpenDialog(false)}
           >
@@ -650,7 +886,9 @@ const Employees = () => {
               editMode ? <Edit /> : <Add />
             }
           >
-            {editMode ? "Update" : "Add Employee"}
+            {editMode
+              ? "Update"
+              : "Add Employee"}
           </Button>
         </DialogActions>
       </Dialog>

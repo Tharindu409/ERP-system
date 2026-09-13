@@ -287,6 +287,7 @@ public class UsersController : ControllerBase
         // -------------------------
         var user = await _context.Users
             .Include(u => u.Role)
+            .Include(u => u.Employee)
             .FirstOrDefaultAsync(u => u.Id == id);
 
         if (user == null)
@@ -362,6 +363,7 @@ public class UsersController : ControllerBase
         // -------------------------
         var user = await _context.Users
             .Include(u => u.Role)
+            .Include(u => u.Employee)
             .FirstOrDefaultAsync(u => u.Id == id);
 
         if (user == null)
@@ -395,6 +397,10 @@ public class UsersController : ControllerBase
         // Update status
         // -------------------------
         user.IsActive = request.IsActive;
+        if (user.Employee != null)
+        {
+            user.Employee.IsActive = request.IsActive;
+        }
 
         await _context.SaveChangesAsync();
 
