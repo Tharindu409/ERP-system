@@ -1,12 +1,12 @@
-
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Text;
 using ERP.Api.Data;
+using ERP.Api.Models;
+using ERP.Api.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using ERP.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -167,6 +167,119 @@ builder.Services.AddSwaggerGen(options =>
 var app = builder.Build();
 
 // =====================================================
+// CREATE INITIAL ADMIN USER
+// =====================================================
+// This runs when the application starts.
+//
+// It creates an Admin only when:
+// 1. Admin role exists
+// 2. No Admin user currently exists
+// 3. ADMIN_USERNAME is configured
+// 4. ADMIN_EMAIL is configured
+// 5. ADMIN_PASSWORD is configured
+//
+// Password is securely hashed using BCrypt.
+// =====================================================
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider
+        .GetRequiredService<AppDbContext>();
+
+    try
+    {
+        var adminRole = await db.Roles
+            .FirstOrDefaultAsync(r => r.Name == "Admin");
+
+        if (adminRole != null)
+        {
+            var adminUsername =
+                builder.Configuration["ADMIN_USERNAME"];
+
+            var adminEmail =
+                builder.Configuration["ADMIN_EMAIL"];
+
+            var adminPassword =
+                builder.Configuration["ADMIN_PASSWORD"];
+
+            if (!string.IsNullOrWhiteSpace(adminUsername) &&
+                !string.IsNullOrWhiteSpace(adminEmail) &&
+                !string.IsNullOrWhiteSpace(adminPassword))
+            {
+                var adminExists = await db.Users
+                    .AnyAsync(u => u.RoleId == adminRole.Id);
+
+                if (!adminExists)
+                {
+                    var adminUser = new User
+                    {
+                        Username = adminUsername.Trim(),
+
+                        Email = adminEmail
+                            .Trim()
+                            .ToLowerInvariant(),
+
+                        PasswordHash =
+                            BCrypt.Net.BCrypt.HashPassword(
+                                adminPassword
+                            ),
+
+                        RoleId = adminRole.Id,
+
+                        IsActive = true
+                    };
+
+                    db.Users.Add(adminUser);
+
+                    await db.SaveChangesAsync();
+
+                    Console.WriteLine(
+                        "=========================================="
+                    );
+
+                    Console.WriteLine(
+                        "Initial Admin user created successfully."
+                    );
+
+                    Console.WriteLine(
+                        $"Admin Username: {adminUsername}"
+                    );
+
+                    Console.WriteLine(
+                        "=========================================="
+                    );
+                }
+                else
+                {
+                    Console.WriteLine(
+                        "Admin user already exists. No new Admin created."
+                    );
+                }
+            }
+            else
+            {
+                Console.WriteLine(
+                    "Admin environment variables are not configured."
+                );
+            }
+        }
+        else
+        {
+            Console.WriteLine(
+                "Admin role was not found."
+            );
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine(
+            "Error while creating initial Admin user:"
+        );
+
+        Console.WriteLine(ex.Message);
+    }
+}
+
+// =====================================================
 // SWAGGER
 // Enabled for deployment/testing
 // =====================================================
@@ -208,9 +321,13 @@ app.MapControllers();
 // Render provides the PORT environment variable.
 // If PORT is not available locally, use 10000.
 // =====================================================
-var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
+var port =
+    Environment.GetEnvironmentVariable("PORT")
+    ?? "10000";
 
-app.Urls.Add($"http://0.0.0.0:{port}");
+app.Urls.Add(
+    $"http://0.0.0.0:{port}"
+);
 
 // =====================================================
 // START APPLICATION
