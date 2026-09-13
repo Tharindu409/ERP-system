@@ -19,6 +19,7 @@ import Reports from "./pages/Reports";
 import AttendanceReports from "./pages/AttendanceReports";
 import EmployeeAttendanceSummary from "./pages/EmployeeAttendanceSummary";
 import HRReports from "./pages/HRReports";
+import AuditLogs from "./pages/AuditLogs";
 
 function App() {
   return (
@@ -213,6 +214,17 @@ function App() {
             >
               <MainLayout>
                 <Users />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/audit-logs"
+          element={
+            <ProtectedRoute allowedRoles={["Admin"]}>
+              <MainLayout>
+                <AuditLogs />
               </MainLayout>
             </ProtectedRoute>
           }

@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using ERP.Api.Data;
 using ERP.Api.Models;
+using ERP.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -22,10 +23,12 @@ public class LeaveController : ControllerBase
         };
 
     private readonly AppDbContext _context;
+    private readonly AuditService _audit;
 
-    public LeaveController(AppDbContext context)
+    public LeaveController(AppDbContext context, AuditService audit)
     {
         _context = context;
+        _audit = audit;
     }
 
     // =========================================================
@@ -144,6 +147,16 @@ public class LeaveController : ControllerBase
 
         _context.LeaveRequests.Add(leaveRequest);
 
+        await _context.SaveChangesAsync();
+
+        _audit.Record("Created", "LeaveRequest", leaveRequest.Id, new
+        {
+            leaveRequest.EmployeeId,
+            leaveRequest.LeaveType,
+            leaveRequest.StartDate,
+            leaveRequest.EndDate,
+            leaveRequest.Status
+        });
         await _context.SaveChangesAsync();
 
         return Ok(new
@@ -395,6 +408,15 @@ public class LeaveController : ControllerBase
                 ? null
                 : request.Comment.Trim();
 
+            _audit.Record("Updated", "LeaveRequest", leave.Id, new
+            {
+                Field = "Status",
+                From = "Pending",
+                To = leave.Status,
+                leave.EmployeeId,
+                leave.ManagerComment
+            });
+
         await _context.SaveChangesAsync();
 
         return Ok(new
@@ -441,6 +463,15 @@ public class LeaveController : ControllerBase
             string.IsNullOrWhiteSpace(request?.Comment)
                 ? null
                 : request.Comment.Trim();
+
+            _audit.Record("Updated", "LeaveRequest", leave.Id, new
+            {
+                Field = "Status",
+                From = "Pending",
+                To = leave.Status,
+                leave.EmployeeId,
+                leave.ManagerComment
+            });
 
         await _context.SaveChangesAsync();
 
@@ -595,6 +626,14 @@ public class LeaveController : ControllerBase
 
         leave.Status = "Cancelled";
 
+        _audit.Record("Updated", "LeaveRequest", leave.Id, new
+        {
+            Field = "Status",
+            From = "Pending",
+            To = leave.Status,
+            leave.EmployeeId
+        });
+
         await _context.SaveChangesAsync();
 
         return Ok(new
@@ -626,6 +665,13 @@ public class LeaveController : ControllerBase
         }
 
         _context.LeaveRequests.Remove(leave);
+
+        _audit.Record("Deleted", "LeaveRequest", leave.Id, new
+        {
+            leave.EmployeeId,
+            leave.LeaveType,
+            leave.Status
+        });
 
         await _context.SaveChangesAsync();
 

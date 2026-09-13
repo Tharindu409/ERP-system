@@ -1,6 +1,7 @@
 using ERP.Api.Data;
 using ERP.Api.DTOs;
 using ERP.Api.Models;
+using ERP.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,10 +14,12 @@ namespace ERP.Api.Controllers;
 public class DepartmentController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly AuditService _audit;
 
-    public DepartmentController(AppDbContext context)
+    public DepartmentController(AppDbContext context, AuditService audit)
     {
         _context = context;
+        _audit = audit;
     }
 
     // GET: api/department
@@ -81,6 +84,13 @@ public class DepartmentController : ControllerBase
 
         await _context.SaveChangesAsync();
 
+        _audit.Record("Created", "Department", department.Id, new
+        {
+            department.Name,
+            department.Description
+        });
+        await _context.SaveChangesAsync();
+
         var response = new DepartmentDto
         {
             Id = department.Id,
@@ -127,8 +137,16 @@ public class DepartmentController : ControllerBase
             });
         }
 
+        var previousName = department.Name;
         department.Name = updatedDepartment.Name;
         department.Description = updatedDepartment.Description;
+
+        _audit.Record("Updated", "Department", department.Id, new
+        {
+            From = previousName,
+            To = department.Name,
+            department.Description
+        });
 
         await _context.SaveChangesAsync();
 
@@ -171,6 +189,12 @@ public class DepartmentController : ControllerBase
         }
 
         _context.Departments.Remove(department);
+
+        _audit.Record("Deleted", "Department", department.Id, new
+        {
+            department.Name,
+            department.Description
+        });
 
         await _context.SaveChangesAsync();
 

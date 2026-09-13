@@ -11,6 +11,7 @@ import {
   EventAvailable,
   CalendarMonth,
   Assessment,
+  History,
   Logout,
 } from "@mui/icons-material";
 
@@ -121,6 +122,12 @@ const Sidebar = ({ mobileOpen, onClose }: SidebarProps) => {
       name: "User Management",
       path: "/users",
       icon: <ManageAccounts />,
+      roles: ["Admin"],
+    },
+    {
+      name: "Audit Log",
+      path: "/audit-logs",
+      icon: <History />,
       roles: ["Admin"],
     },
     {

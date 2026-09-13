@@ -248,13 +248,14 @@ public class UsersController : ControllerBase
 
         _context.Users.Add(user);
 
+        await _context.SaveChangesAsync();
+
         _audit.Record("Created", "User", user.Id, new
         {
             user.Username,
             Role = role.Name,
             user.IsActive
         });
-
         await _context.SaveChangesAsync();
 
         // -------------------------
@@ -415,11 +416,20 @@ public class UsersController : ControllerBase
         // -------------------------
         // Update status
         // -------------------------
+        var previousStatus = user.IsActive ? "Active" : "Inactive";
         user.IsActive = request.IsActive;
         if (user.Employee != null)
         {
             user.Employee.IsActive = request.IsActive;
         }
+
+        _audit.Record("Updated", "User", user.Id, new
+        {
+            user.Username,
+            Field = "Status",
+            From = previousStatus,
+            To = user.IsActive ? "Active" : "Inactive"
+        });
 
         await _context.SaveChangesAsync();
 
@@ -479,6 +489,12 @@ public class UsersController : ControllerBase
         // -------------------------
         // Delete user
         // -------------------------
+        _audit.Record("Deleted", "User", user.Id, new
+        {
+            user.Username,
+            user.Email,
+            Role = user.Role?.Name
+        });
         _context.Users.Remove(user);
 
         await _context.SaveChangesAsync();

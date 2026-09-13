@@ -1,5 +1,6 @@
 using ERP.Api.Data;
 using ERP.Api.Models;
+using ERP.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,10 +13,12 @@ namespace ERP.Api.Controllers;
 public class PayrollController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly AuditService _audit;
 
-    public PayrollController(AppDbContext context)
+    public PayrollController(AppDbContext context, AuditService audit)
     {
         _context = context;
+        _audit = audit;
     }
 
     // GET ALL PAYROLL
@@ -196,6 +199,16 @@ public class PayrollController : ControllerBase
 
         await _context.SaveChangesAsync();
 
+        _audit.Record("Created", "Payroll", payroll.Id, new
+        {
+            payroll.EmployeeId,
+            payroll.Year,
+            payroll.Month,
+            payroll.NetSalary,
+            payroll.Status
+        });
+        await _context.SaveChangesAsync();
+
         return Ok(new
         {
             message = "Payroll generated successfully.",
@@ -268,6 +281,15 @@ public class PayrollController : ControllerBase
             payroll.Status = request.Status.Trim();
         }
 
+        _audit.Record("Updated", "Payroll", payroll.Id, new
+        {
+            payroll.EmployeeId,
+            payroll.Year,
+            payroll.Month,
+            payroll.NetSalary,
+            payroll.Status
+        });
+
         await _context.SaveChangesAsync();
 
         return Ok(new
@@ -299,6 +321,14 @@ public class PayrollController : ControllerBase
         }
 
         _context.Payrolls.Remove(payroll);
+
+        _audit.Record("Deleted", "Payroll", payroll.Id, new
+        {
+            payroll.EmployeeId,
+            payroll.Year,
+            payroll.Month,
+            payroll.NetSalary
+        });
 
         await _context.SaveChangesAsync();
 

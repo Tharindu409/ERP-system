@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using ERP.Api.Data;
 using ERP.Api.Models;
+using ERP.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,10 +14,12 @@ namespace ERP.Api.Controllers;
 public class AttendanceController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly AuditService _audit;
 
-    public AttendanceController(AppDbContext context)
+    public AttendanceController(AppDbContext context, AuditService audit)
     {
         _context = context;
+        _audit = audit;
     }
 
     // =========================================================
@@ -518,6 +521,15 @@ public async Task<IActionResult> CheckIn()
 
         attendance.Remarks = request.Remarks;
 
+        _audit.Record("Updated", "Attendance", attendance.Id, new
+        {
+            attendance.EmployeeId,
+            attendance.Date,
+            attendance.Status,
+            attendance.CheckIn,
+            attendance.CheckOut
+        });
+
         await _context.SaveChangesAsync();
 
         return Ok(new
@@ -554,6 +566,13 @@ public async Task<IActionResult> CheckIn()
         }
 
         _context.Attendances.Remove(attendance);
+
+        _audit.Record("Deleted", "Attendance", attendance.Id, new
+        {
+            attendance.EmployeeId,
+            attendance.Date,
+            attendance.Status
+        });
 
         await _context.SaveChangesAsync();
 

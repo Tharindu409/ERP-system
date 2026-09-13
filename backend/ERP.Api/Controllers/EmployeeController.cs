@@ -1,6 +1,7 @@
 using ERP.Api.Data;
 using ERP.Api.DTOs;
 using ERP.Api.Models;
+using ERP.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,10 +15,12 @@ namespace ERP.Api.Controllers;
 public class EmployeeController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly AuditService _audit;
 
-    public EmployeeController(AppDbContext context)
+    public EmployeeController(AppDbContext context, AuditService audit)
     {
         _context = context;
+        _audit = audit;
     }
 
     // GET: api/Employee/me
@@ -195,6 +198,15 @@ public class EmployeeController : ControllerBase
 
         await _context.SaveChangesAsync();
 
+        _audit.Record("Created", "Employee", employee.Id, new
+        {
+            Employee = $"{employee.FirstName} {employee.LastName}".Trim(),
+            employee.UserId,
+            employee.DepartmentId,
+            employee.IsActive
+        });
+        await _context.SaveChangesAsync();
+
         return CreatedAtAction(
             nameof(GetEmployee),
             new { id = employee.Id },
@@ -252,11 +264,20 @@ public class EmployeeController : ControllerBase
         employee.HireDate = updatedEmployee.HireDate;
         employee.Salary = updatedEmployee.Salary;
         employee.DepartmentId = updatedEmployee.DepartmentId;
+        var previousStatus = employee.IsActive ? "Active" : "Inactive";
         employee.IsActive = updatedEmployee.IsActive;
         if (employee.User != null)
         {
             employee.User.IsActive = updatedEmployee.IsActive;
         }
+
+        _audit.Record("Updated", "Employee", employee.Id, new
+        {
+            Employee = $"{employee.FirstName} {employee.LastName}".Trim(),
+            Field = "Status",
+            From = previousStatus,
+            To = employee.IsActive ? "Active" : "Inactive"
+        });
 
         await _context.SaveChangesAsync();
 
@@ -297,6 +318,12 @@ public class EmployeeController : ControllerBase
         }
 
         _context.Employees.Remove(employee);
+
+        _audit.Record("Deleted", "Employee", employee.Id, new
+        {
+            Employee = $"{employee.FirstName} {employee.LastName}".Trim(),
+            employee.UserId
+        });
 
         await _context.SaveChangesAsync();
 

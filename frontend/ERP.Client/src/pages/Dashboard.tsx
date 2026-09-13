@@ -191,6 +191,66 @@ const SectionCard = ({
   );
 };
 
+const DonutChart = ({
+  items,
+  total,
+}: {
+  items: { label: string; value: number; color: string }[];
+  total: number;
+}) => {
+  let cursor = 0;
+  const gradient = items
+    .map((item) => {
+      const start = total ? (cursor / total) * 100 : 0;
+      cursor += item.value;
+      const end = total ? (cursor / total) * 100 : 0;
+      return `${item.color} ${start}% ${end}%`;
+    })
+    .join(", ");
+
+  return (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 3, flexWrap: "wrap" }}>
+      <Box
+        role="img"
+        aria-label={`Attendance distribution: ${total} records`}
+        sx={{
+          width: 148,
+          height: 148,
+          borderRadius: "50%",
+          flexShrink: 0,
+          background: total ? `conic-gradient(${gradient})` : "#dbe6e8",
+          display: "grid",
+          placeItems: "center",
+          position: "relative",
+          "&::after": {
+            content: "\"\"",
+            position: "absolute",
+            inset: 18,
+            borderRadius: "50%",
+            bgcolor: "background.paper",
+          },
+        }}
+      >
+        <Box sx={{ zIndex: 1, textAlign: "center" }}>
+          <Typography variant="h5" sx={{ fontWeight: 700, lineHeight: 1 }}>{total}</Typography>
+          <Typography variant="caption" color="text.secondary">records</Typography>
+        </Box>
+      </Box>
+      <Box sx={{ flex: 1, minWidth: 180 }}>
+        {items.map((item) => (
+          <Box key={item.label} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1.25 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box sx={{ width: 9, height: 9, borderRadius: "50%", bgcolor: item.color }} />
+              <Typography variant="body2">{item.label}</Typography>
+            </Box>
+            <Typography variant="body2" sx={{ fontWeight: 700 }}>{item.value}</Typography>
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+};
+
 /* =========================================================
    DASHBOARD
 ========================================================= */
@@ -353,6 +413,41 @@ const Dashboard = () => {
             ? "HR workforce and attendance overview"
             : "Your attendance and leave overview"}
         </Typography>
+      </Box>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1.2fr) minmax(0, 0.8fr)" },
+          gap: 3,
+          mb: 3,
+        }}
+      >
+        <SectionCard title="Attendance Mix">
+          <DonutChart items={overview} total={attendanceTotal} />
+        </SectionCard>
+
+        <SectionCard title="Leave Pipeline">
+          <Box sx={{ mb: 2 }}>
+            <Box sx={{ height: 14, display: "flex", overflow: "hidden", borderRadius: 7, bgcolor: "action.hover" }}>
+              {[
+                { value: analytics.pendingLeaveRequests, color: "#d97706" },
+                { value: analytics.approvedLeaveRequests, color: "#16a34a" },
+                { value: analytics.rejectedLeaveRequests, color: "#dc2626" },
+              ].map((item, index) => {
+                const total = analytics.pendingLeaveRequests + analytics.approvedLeaveRequests + analytics.rejectedLeaveRequests;
+                return <Box key={index} sx={{ width: total ? `${(item.value / total) * 100}%` : "0%", bgcolor: item.color, transition: "width 400ms ease" }} />;
+              })}
+            </Box>
+          </Box>
+          <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1.5 }}>
+            {[
+              { label: "Pending", value: analytics.pendingLeaveRequests, color: "#d97706" },
+              { label: "Approved", value: analytics.approvedLeaveRequests, color: "#16a34a" },
+              { label: "Rejected", value: analytics.rejectedLeaveRequests, color: "#dc2626" },
+            ].map((item) => <Box key={item.label} sx={{ p: 1.5, borderRadius: 2, bgcolor: "action.hover" }}><Typography variant="caption" color="text.secondary">{item.label}</Typography><Typography variant="h6" sx={{ color: item.color }}>{item.value}</Typography></Box>)}
+          </Box>
+        </SectionCard>
       </Box>
 
       {/* =================================================
